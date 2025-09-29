@@ -5,10 +5,14 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+// 导入Swagger相关模块
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpecs = require('./swagger.js');
 
 // 初始化Express应用
 const app = express();
-const PORT = process.env.PORT || 5000;
+// 直接使用5001端口，避免端口冲突
+const PORT = 5001;
 
 // 中间件配置
 app.use(helmet()); // 安全头设置
@@ -47,6 +51,14 @@ app.use('/api/users', userRoutes);
 app.use('/api/stocks', stockRoutes);
 app.use('/api/analysis', analysisRoutes);
 app.use('/api/recommendations', recommendationRoutes);
+
+// 配置Swagger文档路由
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+  explorer: true,
+  swaggerOptions: {
+    persistAuthorization: true
+  }
+}));
 
 // 健康检查路由
 app.get('/health', (req, res) => {
@@ -92,14 +104,13 @@ app.use((req, res) => {
   });
 });
 
-// 启动服务器 - 仅在本地开发环境启动
-if (process.env.NODE_ENV !== 'production') {
-  app.listen(PORT, () => {
-    console.log(`皓月量化智能引擎API服务已启动，端口: ${PORT}`);
-    console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`API地址: http://localhost:${PORT}/api`);
-  });
-}
+// 启动服务器
+app.listen(PORT, () => {
+  console.log(`皓月量化智能引擎API服务已启动，端口: ${PORT}`);
+  console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`API地址: http://localhost:${PORT}/api`);
+  console.log(`Swagger文档: http://localhost:${PORT}/api/docs`);
+});
 
 // Vercel会自动处理HTTP请求，通过module.exports导出app
 

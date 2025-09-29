@@ -4,7 +4,104 @@ const { check } = require('express-validator');
 const authController = require('../controllers/auth.controller');
 const { protect, validateRequest } = require('../middleware/auth');
 
-// 用户注册
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     RegisterRequest:
+ *       type: object
+ *       required:
+ *         - username
+ *         - email
+ *         - password
+ *       properties:
+ *         username:
+ *           type: string
+ *           description: 用户名，至少3个字符
+ *         email:
+ *           type: string
+ *           description: 用户邮箱
+ *         password:
+ *           type: string
+ *           description: 用户密码，至少6个字符
+ *         name:
+ *           type: string
+ *           description: 用户姓名，可选
+ *     LoginRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *         - password
+ *       properties:
+ *         email:
+ *           type: string
+ *           description: 用户邮箱
+ *         password:
+ *           type: string
+ *           description: 用户密码
+ *     RefreshTokenRequest:
+ *       type: object
+ *       required:
+ *         - refreshToken
+ *       properties:
+ *         refreshToken:
+ *           type: string
+ *           description: 刷新令牌
+ *     ForgotPasswordRequest:
+ *       type: object
+ *       required:
+ *         - email
+ *       properties:
+ *         email:
+ *           type: string
+ *           description: 用户邮箱
+ *     ResetPasswordRequest:
+ *       type: object
+ *       required:
+ *         - password
+ *       properties:
+ *         password:
+ *           type: string
+ *           description: 新密码，至少6个字符
+ *     AuthResponse:
+ *       type: object
+ *       properties:
+ *         token:
+ *           type: string
+ *           description: JWT访问令牌
+ *         refreshToken:
+ *           type: string
+ *           description: 刷新令牌
+ *         user:
+ *           $ref: '#/components/schemas/User'
+ */
+
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: 用户注册
+ *     tags: [认证]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RegisterRequest'
+ *     responses:
+ *       201:
+ *         description: 注册成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       400:
+ *         description: 注册失败，参数错误或用户已存在
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post(
   '/register',
   [
@@ -17,7 +114,32 @@ router.post(
   authController.register
 );
 
-// 用户登录
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: 用户登录
+ *     tags: [认证]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/LoginRequest'
+ *     responses:
+ *       200:
+ *         description: 登录成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       401:
+ *         description: 认证失败，邮箱或密码错误
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post(
   '/login',
   [
@@ -28,7 +150,32 @@ router.post(
   authController.login
 );
 
-// 刷新Token
+/**
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: 刷新访问令牌
+ *     tags: [认证]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/RefreshTokenRequest'
+ *     responses:
+ *       200:
+ *         description: 令牌刷新成功
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/AuthResponse'
+ *       401:
+ *         description: 刷新令牌无效
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post(
   '/refresh-token',
   [
@@ -38,10 +185,53 @@ router.post(
   authController.refreshToken
 );
 
-// 邮箱验证
+/**
+ * @swagger
+ * /api/auth/verify-email/{token}:
+ *   get:
+ *     summary: 验证邮箱
+ *     tags: [认证]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 邮箱验证令牌
+ *     responses:
+ *       200:
+ *         description: 邮箱验证成功
+ *       400:
+ *         description: 验证令牌无效或已过期
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/verify-email/:token', authController.verifyEmail);
 
-// 忘记密码
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: 忘记密码
+ *     tags: [认证]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordRequest'
+ *     responses:
+ *       200:
+ *         description: 重置密码链接已发送到邮箱
+ *       404:
+ *         description: 邮箱不存在
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post(
   '/forgot-password',
   [
@@ -51,7 +241,35 @@ router.post(
   authController.forgotPassword
 );
 
-// 重置密码
+/**
+ * @swagger
+ * /api/auth/reset-password/{token}:
+ *   post:
+ *     summary: 重置密码
+ *     tags: [认证]
+ *     parameters:
+ *       - in: path
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 重置密码令牌
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ResetPasswordRequest'
+ *     responses:
+ *       200:
+ *         description: 密码重置成功
+ *       400:
+ *         description: 重置令牌无效或已过期
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post(
   '/reset-password/:token',
   [
@@ -61,13 +279,72 @@ router.post(
   authController.resetPassword
 );
 
-// 获取当前用户信息
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: 获取当前用户信息
+ *     tags: [认证]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功获取用户信息
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/User'
+ *       401:
+ *         description: 未授权，需要有效的访问令牌
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.get('/me', protect, authController.getCurrentUser);
 
-// 登出
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: 用户登出
+ *     tags: [认证]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 登出成功
+ *       401:
+ *         description: 未授权，需要有效的访问令牌
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post('/logout', protect, authController.logout);
 
-// 重新发送验证邮件
+/**
+ * @swagger
+ * /api/auth/resend-verification:
+ *   post:
+ *     summary: 重新发送验证邮件
+ *     tags: [认证]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ForgotPasswordRequest'
+ *     responses:
+ *       200:
+ *         description: 验证邮件已重新发送
+ *       404:
+ *         description: 邮箱不存在
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
 router.post(
   '/resend-verification',
   [
