@@ -21,9 +21,15 @@ app.use(express.urlencoded({ extended: true })); // 表单解析
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // MongoDB连接
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/haoyue', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
+// 使用NODE_ENV环境变量来决定连接哪个数据库
+const mongoUri = process.env.NODE_ENV === 'production' && process.env.MONGODB_URI_PROD 
+  ? process.env.MONGODB_URI_PROD 
+  : (process.env.MONGODB_URI || 'mongodb://localhost:27017/haoyue');
+
+mongoose.connect(mongoUri, {
+  serverSelectionTimeoutMS: 5000, // 服务器选择超时
+  socketTimeoutMS: 45000,        // 套接字超时
+  family: 4                      // 使用IPv4避免IPv6潜在问题
 })
 .then(() => console.log('MongoDB连接成功'))
 .catch(err => console.error('MongoDB连接失败:', err));

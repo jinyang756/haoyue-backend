@@ -6,9 +6,11 @@ const { logger } = require('../utils/logger');
  */
 const connectDB = async () => {
   try {
+    // Updated connection options for MongoDB Atlas compatibility
     const conn = await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/haoyue', {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000, // Server selection timeout
+      socketTimeoutMS: 45000,        // Socket timeout
+      family: 4                      // Use IPv4 to avoid potential IPv6 issues
     });
 
     logger.info(`MongoDB连接成功: ${conn.connection.host}`);
