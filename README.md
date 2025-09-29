@@ -41,6 +41,7 @@
 - **日志**: winston
 - **邮件服务**: nodemailer
 - **容器化**: Docker
+- **API文档**: Swagger
 - **部署平台**: Vercel / 自建服务器
 
 ## 项目结构
@@ -85,6 +86,7 @@ haoyue-backend/
 ├── Dockerfile              # Docker构建文件
 ├── docker-compose.yml      # Docker Compose配置
 ├── README.md               # 项目说明
+├── swagger.js              # Swagger文档配置
 └── index.js                # 入口文件
 ```
 
@@ -133,10 +135,11 @@ npm start
 
 5. **访问API**
 
-服务启动后，API将在 `http://localhost:5000` 可用：
+服务启动后，API将在 `http://localhost:5001` 可用：
 
-- API首页: `http://localhost:5000`
-- 健康检查: `http://localhost:5000/health`
+- API首页: `http://localhost:5001`
+- 健康检查: `http://localhost:5001/health`
+- Swagger文档: `http://localhost:5001/api/docs`
 
 ## 环境变量配置
 
@@ -144,7 +147,7 @@ npm start
 
 ```env
 # 服务器配置
-PORT=5000
+PORT=5001
 NODE_ENV=development
 
 # MongoDB配置
@@ -187,7 +190,7 @@ docker-compose down
 docker build -t haoyue-api .
 
 # 运行容器（需要单独的MongoDB实例）
-docker run -d -p 5000:5000 --env-file .env --name haoyue-api haoyue-api
+docker run -d -p 5001:5001 --env-file .env --name haoyue-api haoyue-api
 ```
 
 ## Vercel部署
@@ -204,6 +207,8 @@ docker run -d -p 5000:5000 --env-file .env --name haoyue-api haoyue-api
 
 ## API文档
 
+项目已集成Swagger文档，启动服务后可访问 `http://localhost:5001/api/docs` 查看完整的API文档。以下是主要API接口概览：
+
 ### 认证相关
 
 | 接口 | 方法 | 描述 | 权限 |
@@ -216,6 +221,7 @@ docker run -d -p 5000:5000 --env-file .env --name haoyue-api haoyue-api
 | `/api/auth/reset-password/:token` | POST | 重置密码 | 公开 |
 | `/api/auth/me` | GET | 获取当前用户信息 | 用户 |
 | `/api/auth/logout` | POST | 登出 | 用户 |
+| `/api/auth/resend-verification` | POST | 重新发送验证邮件 | 用户 |
 
 ### 股票数据相关
 
@@ -238,6 +244,21 @@ docker run -d -p 5000:5000 --env-file .env --name haoyue-api haoyue-api
 | `/api/analysis/:id` | GET | 获取分析详情 | 用户 |
 | `/api/analysis/:id/cancel` | PUT | 取消分析任务 | 用户 |
 | `/api/analysis/stats` | GET | 获取分析统计 | 用户 |
+| `/api/analysis/batch` | POST | 批量分析任务 | VIP/管理员 |
+| `/api/analysis/export/:id` | GET | 导出分析报告 | 用户 |
+
+### 推荐相关
+
+| 接口 | 方法 | 描述 | 权限 |
+|------|------|------|------|
+| `/api/recommendations` | GET | 获取推荐列表 | 公开 |
+| `/api/recommendations/:id` | GET | 获取推荐详情 | 公开 |
+| `/api/recommendations/create` | POST | 创建自定义推荐 | VIP/管理员 |
+| `/api/recommendations/performance/:id` | GET | 获取推荐绩效 | 用户 |
+| `/api/recommendations/favorite/:id` | POST | 收藏推荐 | 用户 |
+| `/api/recommendations/favorites` | GET | 获取收藏的推荐 | 用户 |
+| `/api/recommendations/latest` | GET | 获取最新推荐 | 公开 |
+| `/api/recommendations/top` | GET | 获取热门推荐 | 公开 |
 
 ## 数据库设计
 
@@ -293,7 +314,7 @@ server {
     server_name api.haoyuequant.com;
 
     location / {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://localhost:5001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -350,11 +371,13 @@ sudo certbot --nginx -d api.haoyuequant.com
 - 使用ES6+特性
 - API设计遵循RESTful原则
 - 错误处理统一化
+- 为API添加Swagger文档注释（参考已有路由文件格式）
 
 ### 测试
 - 编写单元测试和集成测试
 - 使用Postman测试API接口
 - 进行性能测试
+- 使用Swagger文档测试接口功能
 
 ## 贡献指南
 
@@ -365,6 +388,4 @@ sudo certbot --nginx -d api.haoyuequant.com
 
 ## 许可证
 
-本项目采用MIT许可证。#   h a o y u e - b a c k e n d 
- 
- 
+本项目采用MIT许可证。
