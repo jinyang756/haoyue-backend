@@ -86,12 +86,16 @@ app.use((req, res) => {
   });
 });
 
-// 启动服务器
-app.listen(PORT, () => {
-  console.log(`皓月量化智能引擎API服务已启动，端口: ${PORT}`);
-  console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`API地址: http://localhost:${PORT}/api`);
-});
+// 启动服务器 - 仅在本地开发环境启动
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => {
+    console.log(`皓月量化智能引擎API服务已启动，端口: ${PORT}`);
+    console.log(`环境: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`API地址: http://localhost:${PORT}/api`);
+  });
+}
+
+// Vercel会自动处理HTTP请求，通过module.exports导出app
 
 // 优雅关闭
 process.on('SIGINT', () => {
