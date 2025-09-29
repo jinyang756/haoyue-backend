@@ -1,0 +1,91 @@
+version: '3.8'
+
+services:
+  # MongoDB服务
+  mongodb:
+    image: mongo:5.0
+    container_name: haoyue-mongodb
+    restart: always
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: haoyue
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - haoyue-network
+
+  # API服务
+  api:
+    build: .
+    container_name: haoyue-api
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: development
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:password@mongodb:27017/haoyue?authSource=admin
+      JWT_SECRET: your_jwt_secret_key_here
+      JWT_EXPIRES_IN: 7d
+      JWT_REFRESH_SECRET: your_refresh_secret_key_here
+      JWT_REFRESH_EXPIRES_IN: 30d
+      SMTP_HOST: smtp.gmail.com
+      SMTP_PORT: 587
+      SMTP_USER: your_email@gmail.com
+      SMTP_PASS: your_app_password
+      CORS_ORIGIN: http://localhost:3000
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - ./logs:/app/logs
+    depends_on:
+      - mongodb
+    networks:
+      - haoyue-network
+    command: npm start
+
+  # 前端服务（可选）
+  frontend:
+    image: node:18-alpine
+    container_name: haoyue-frontend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      REACT_APP_API_URL: http://localhost:5000/api
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    working_dir: /app
+    command: sh -c "echo '前端服务容器运行中' && tail -f /dev/null"
+    networks:
+      - haoyue-network
+
+  # MongoDB管理界面
+  mongo-express:
+    image: mongo-express:latest
+    container_name: haoyue-mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: password
+      ME_CONFIG_MONGODB_URL: mongodb://admin:password@mongodb:27017/haoyue?authSource=admin
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: password
+    depends_on:
+      - mongodb
+    networks:
+      - haoyue-network
+
+networks:
+  haoyue-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
