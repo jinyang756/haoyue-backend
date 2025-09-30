@@ -19,11 +19,11 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:5000',
+        url: 'http://localhost:5001',
         description: '开发环境服务器'
       },
       {
-        url: 'https://haoyue-backend.vercel.app',
+        url: 'https://jiuzhougroup.vip',
         description: '生产环境服务器'
       }
     ],
