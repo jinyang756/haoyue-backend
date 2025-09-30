@@ -5,6 +5,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const path = require('path');
+// 导入定时任务服务，确保在服务器启动时初始化定时任务
+require('./services/schedule.service');
 // 导入Swagger相关模块
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger.js');

@@ -2,6 +2,7 @@ const schedule = require('node-schedule');
 const stockService = require('./stock.service');
 const { logger } = require('../utils/logger');
 const Stock = require('../models/Stock');
+const schedule = require('node-schedule');
 
 class ScheduleService {
   constructor() {
@@ -314,13 +315,48 @@ class ScheduleService {
    */
   getJobsStatus() {
     const status = {};
+    
+    // 获取全局调度的所有任务
+    const scheduledJobs = schedule.scheduledJobs;
+    
     for (const [name, job] of Object.entries(this.jobs)) {
+      // 找到对应的全局任务
+      let globalJob = null;
+      for (const [jobId, jobInstance] of Object.entries(scheduledJobs)) {
+        // 这里使用一个简单的方式来关联任务，实际项目中可能需要更好的标识方法
+        if (jobId.includes(name)) {
+          globalJob = jobInstance;
+          break;
+        }
+      }
+      
       status[name] = {
-        running: job.running,
-        lastDate: job.lastDate ? job.lastDate().toISOString() : null,
-        nextDate: job.nextDate() ? job.nextDate().toISOString() : null
+        running: false, // 在node-schedule v2.1.1中没有直接的running属性
+        lastDate: null, // 需要在任务执行时手动记录
+        nextDate: null
       };
+      
+      // 尝试获取下次执行时间
+      if (globalJob) {
+        try {
+          let nextInvocation = null;
+          if (globalJob.nextInvocation) {
+            nextInvocation = globalJob.nextInvocation();
+          } else if (globalJob.nextDate) {
+            nextInvocation = globalJob.nextDate();
+          } else if (globalJob._job && globalJob._job.nextInvocation) {
+            nextInvocation = globalJob._job.nextInvocation();
+          }
+          
+          if (nextInvocation) {
+            status[name].nextDate = nextInvocation.toISOString();
+          }
+        } catch (error) {
+          logger.error(`获取任务 ${name} 下次执行时间失败:`, error);
+        }
+      }
     }
+    
     return status;
   }
 

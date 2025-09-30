@@ -653,4 +653,61 @@ router.delete(
   stockController.deleteStock
 );
 
+/**
+ * @swagger
+ * /api/stocks/schedule-status:
+ *   get:
+ *     summary: 获取定时任务状态（仅管理员）
+ *     tags: [定时任务]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 成功获取定时任务状态
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success: 
+ *                   type: boolean
+ *                   example: true
+ *                 status: 
+ *                   type: object
+ *                   description: 定时任务状态信息
+ *       401:
+ *         description: 未授权访问
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       403:
+ *         description: 权限不足
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+router.get(
+  '/schedule-status',
+  protect,
+  authorize('admin'),
+  async (req, res) => {
+    try {
+      const scheduleService = require('../services/schedule.service');
+      const status = scheduleService.getJobsStatus();
+      res.status(200).json({
+        success: true,
+        status
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: '获取定时任务状态失败',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+);
+
 module.exports = router;
