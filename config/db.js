@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const mongoose = require('mongoose');
 const { logger } = require('../utils/logger');
 
 /**
@@ -18,7 +17,9 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     logger.error('MongoDB连接失败:', error);
-    process.exit(1);
+    logger.warn('服务将继续运行，但部分依赖数据库的功能可能不可用');
+    // 不退出进程，继续运行服务器
+    return null;
   }
 };
 

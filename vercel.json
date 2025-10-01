@@ -1,5 +1,7 @@
 {
   "version": 2,
+  "installCommand": "npm install",
+  "buildCommand": "echo 'No build required for Node.js application'",
   "builds": [
     {
       "src": "index.js",
@@ -19,7 +21,11 @@
   ],
   "functions": {
     "index.js": {
-      "timeout": 10
+      "timeout": 30,
+      "memory": 1024
     }
+  },
+  "env": {
+    "NODE_ENV": "production"
   }
 }

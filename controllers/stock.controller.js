@@ -1,6 +1,92 @@
+const mongoose = require('mongoose');
 const Stock = require('../models/Stock');
 const axios = require('axios');
 const { validationResult } = require('express-validator');
+const { logger } = require('../utils/logger');
+
+// 模拟股票数据
+const mockStocks = [
+  { 
+    id: '1',
+    symbol: 'AAPL', 
+    name: '苹果公司', 
+    price: 187.23, 
+    change: 1.23, 
+    changePercent: 0.66,
+    marketCap: 3.02,
+    sector: '科技',
+    industry: '电子设备',
+    description: '苹果公司设计、制造和销售智能手机、个人电脑、平板电脑、可穿戴设备和配件，并提供各种相关服务。',
+    isActive: true,
+    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date()
+  },
+  { 
+    id: '2',
+    symbol: 'MSFT', 
+    name: '微软公司', 
+    price: 410.56, 
+    change: -2.34, 
+    changePercent: -0.57,
+    marketCap: 3.25,
+    sector: '科技',
+    industry: '软件服务',
+    description: '微软公司开发、授权和支持软件、服务、设备和解决方案。',
+    isActive: true,
+    createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date()
+  },
+  { 
+    id: '3',
+    symbol: 'TSLA', 
+    name: '特斯拉', 
+    price: 232.87, 
+    change: 5.67, 
+    changePercent: 2.5,
+    marketCap: 0.75,
+    sector: '汽车',
+    industry: '汽车制造',
+    description: '特斯拉设计、开发、制造和销售全电动汽车和能源存储系统，并提供相关服务。',
+    isActive: true,
+    createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date()
+  },
+  { 
+    id: '4',
+    symbol: 'AMZN', 
+    name: '亚马逊', 
+    price: 198.45, 
+    change: 0.89, 
+    changePercent: 0.45,
+    marketCap: 1.98,
+    sector: '零售',
+    industry: '电子商务',
+    description: '亚马逊是一家全球性的电子商务、云计算、数字流媒体和人工智能公司。',
+    isActive: true,
+    createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date()
+  },
+  { 
+    id: '5',
+    symbol: 'GOOGL', 
+    name: '谷歌', 
+    price: 134.78, 
+    change: -1.23, 
+    changePercent: -0.91,
+    marketCap: 1.92,
+    sector: '科技',
+    industry: '互联网服务',
+    description: '谷歌是一家全球性的科技公司，专注于互联网相关服务和产品。',
+    isActive: true,
+    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
+    updatedAt: new Date()
+  }
+];
+
+// 检查MongoDB连接状态
+const isMongoDBConnected = () => {
+  return mongoose.connection.readyState === 1; // 1表示已连接
+};
 
 // 获取所有股票列表
 exports.getAllStocks = async (req, res) => {
@@ -16,6 +102,53 @@ exports.getAllStocks = async (req, res) => {
       order = 'asc' 
     } = req.query;
 
+    // 如果MongoDB未连接，返回模拟数据
+    if (!isMongoDBConnected()) {
+      let filteredMockStocks = [...mockStocks];
+      
+      // 应用过滤条件
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredMockStocks = filteredMockStocks.filter(stock => 
+          stock.symbol.toLowerCase().includes(searchLower) || 
+          stock.name.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      if (sector) {
+        filteredMockStocks = filteredMockStocks.filter(stock => stock.sector.includes(sector));
+      }
+      
+      if (industry) {
+        filteredMockStocks = filteredMockStocks.filter(stock => stock.industry.includes(industry));
+      }
+      
+      // 应用排序
+      if (sort === 'symbol') {
+        filteredMockStocks.sort((a, b) => a.symbol.localeCompare(b.symbol) * (order === 'asc' ? 1 : -1));
+      } else if (sort === 'name') {
+        filteredMockStocks.sort((a, b) => a.name.localeCompare(b.name) * (order === 'asc' ? 1 : -1));
+      } else if (sort === 'price') {
+        filteredMockStocks.sort((a, b) => (a.price - b.price) * (order === 'asc' ? 1 : -1));
+      }
+      
+      // 应用分页
+      const startIndex = (parseInt(page) - 1) * parseInt(limit);
+      const paginatedMockStocks = filteredMockStocks.slice(startIndex, startIndex + parseInt(limit));
+      
+      return res.status(200).json({
+        success: true,
+        message: '股票列表获取成功(模拟数据)',
+        count: paginatedMockStocks.length,
+        total: filteredMockStocks.length,
+        totalPages: Math.ceil(filteredMockStocks.length / limit),
+        currentPage: page * 1,
+        stocks: paginatedMockStocks,
+        mongodbStatus: 'not connected'
+      });
+    }
+
+    // 原始逻辑 - MongoDB连接时执行
     // 构建查询条件
     const query = {};
     
@@ -62,7 +195,64 @@ exports.getAllStocks = async (req, res) => {
       stocks
     });
   } catch (error) {
-    console.error('获取股票列表错误:', error);
+    logger.error('获取股票列表错误:', error);
+    
+    // 如果是数据库错误，返回模拟数据
+    if (error.name === 'MongoError' || error.name === 'MongooseError') {
+      const { 
+        page = 1, 
+        limit = 20, 
+        search = '', 
+        sector, 
+        industry, 
+        sort = 'symbol', 
+        order = 'asc' 
+      } = req.query;
+      
+      let filteredMockStocks = [...mockStocks];
+      
+      // 应用过滤条件
+      if (search) {
+        const searchLower = search.toLowerCase();
+        filteredMockStocks = filteredMockStocks.filter(stock => 
+          stock.symbol.toLowerCase().includes(searchLower) || 
+          stock.name.toLowerCase().includes(searchLower)
+        );
+      }
+      
+      if (sector) {
+        filteredMockStocks = filteredMockStocks.filter(stock => stock.sector.includes(sector));
+      }
+      
+      if (industry) {
+        filteredMockStocks = filteredMockStocks.filter(stock => stock.industry.includes(industry));
+      }
+      
+      // 应用排序
+      if (sort === 'symbol') {
+        filteredMockStocks.sort((a, b) => a.symbol.localeCompare(b.symbol) * (order === 'asc' ? 1 : -1));
+      } else if (sort === 'name') {
+        filteredMockStocks.sort((a, b) => a.name.localeCompare(b.name) * (order === 'asc' ? 1 : -1));
+      } else if (sort === 'price') {
+        filteredMockStocks.sort((a, b) => (a.price - b.price) * (order === 'asc' ? 1 : -1));
+      }
+      
+      // 应用分页
+      const startIndex = (parseInt(page) - 1) * parseInt(limit);
+      const paginatedMockStocks = filteredMockStocks.slice(startIndex, startIndex + parseInt(limit));
+      
+      return res.status(200).json({
+        success: true,
+        message: '股票列表获取成功(模拟数据)',
+        count: paginatedMockStocks.length,
+        total: filteredMockStocks.length,
+        totalPages: Math.ceil(filteredMockStocks.length / limit),
+        currentPage: page * 1,
+        stocks: paginatedMockStocks,
+        mongodbStatus: 'error'
+      });
+    }
+
     res.status(500).json({
       message: '服务器错误',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -73,10 +263,31 @@ exports.getAllStocks = async (req, res) => {
 // 获取单个股票详情
 exports.getStockById = async (req, res) => {
   try {
+    const { id } = req.params;
+    
+    // 如果MongoDB未连接，返回模拟数据
+    if (!isMongoDBConnected()) {
+      const mockStock = mockStocks.find(s => s.symbol === id.toUpperCase() || s.id === id);
+      
+      if (!mockStock) {
+        return res.status(404).json({
+          message: '股票不存在'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: '股票详情获取成功(模拟数据)',
+        stock: mockStock,
+        mongodbStatus: 'not connected'
+      });
+    }
+
+    // 原始逻辑 - MongoDB连接时执行
     const stock = await Stock.findOne({
       $or: [
-        { _id: req.params.id },
-        { symbol: req.params.id.toUpperCase() }
+        { _id: id },
+        { symbol: id.toUpperCase() }
       ],
       isActive: true
     });
@@ -92,12 +303,44 @@ exports.getStockById = async (req, res) => {
       stock
     });
   } catch (error) {
-    console.error('获取股票详情错误:', error);
+    logger.error('获取股票详情错误:', error);
+    
+    // 如果是数据库错误，返回模拟数据
+    if (error.name === 'MongoError' || error.name === 'MongooseError') {
+      const { id } = req.params;
+      const mockStock = mockStocks.find(s => s.symbol === id.toUpperCase() || s.id === id);
+      
+      if (!mockStock) {
+        return res.status(404).json({
+          message: '股票不存在'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: '股票详情获取成功(模拟数据)',
+        stock: mockStock,
+        mongodbStatus: 'error'
+      });
+    }
+
     res.status(500).json({
       message: '服务器错误',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
+};
+
+// 获取股票列表（兼容旧接口）
+exports.getStockList = async (req, res) => {
+  // 重定向到getAllStocks方法
+  return exports.getAllStocks(req, res);
+};
+
+// 获取股票详情（兼容旧接口）
+exports.getStockDetail = async (req, res) => {
+  // 重定向到getStockById方法
+  return exports.getStockById(req, res);
 };
 
 // 获取股票历史数据
