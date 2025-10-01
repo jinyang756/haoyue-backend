@@ -2,7 +2,6 @@ const schedule = require('node-schedule');
 const stockService = require('./stock.service');
 const { logger } = require('../utils/logger');
 const Stock = require('../models/Stock');
-const schedule = require('node-schedule');
 
 class ScheduleService {
   constructor() {
