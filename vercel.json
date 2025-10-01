@@ -14,9 +14,7 @@
     }
   ],
   "functions": {
-    "index.js": {
-      "memory": 1024
-    }
+    "index.js": {}
   },
   "env": {
     "NODE_ENV": "production"
