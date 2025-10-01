@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -10,11 +9,13 @@ require('./services/schedule.service');
 // 导入Swagger相关模块
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger.js');
+// 导入数据库连接函数
+const { connectDB, closeDB } = require('./config/db.js');
 
 // 初始化Express应用
 const app = express();
-// 直接使用5001端口，避免端口冲突
-const PORT = 5001;
+// 使用环境变量或默认端口
+const PORT = process.env.PORT || 5001;
 
 // 中间件配置
 app.use(helmet()); // 安全头设置
@@ -26,19 +27,8 @@ app.use(express.urlencoded({ extended: true })); // 表单解析
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// MongoDB连接
-// 使用NODE_ENV环境变量来决定连接哪个数据库
-const mongoUri = process.env.NODE_ENV === 'production' && process.env.MONGODB_URI_PROD 
-  ? process.env.MONGODB_URI_PROD 
-  : (process.env.MONGODB_URI || 'mongodb://localhost:27017/haoyue');
-
-mongoose.connect(mongoUri, {
-  serverSelectionTimeoutMS: 5000, // 服务器选择超时
-  socketTimeoutMS: 45000,        // 套接字超时
-  family: 4                      // 使用IPv4避免IPv6潜在问题
-})
-.then(() => console.log('MongoDB连接成功'))
-.catch(err => console.error('MongoDB连接失败:', err));
+// 连接数据库
+connectDB();
 
 // 路由导入
 const authRoutes = require('./routes/auth.routes');
@@ -117,12 +107,15 @@ app.listen(PORT, () => {
 // Vercel会自动处理HTTP请求，通过module.exports导出app
 
 // 优雅关闭
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   console.log('正在关闭服务器...');
-  mongoose.connection.close(false, () => {
-    console.log('MongoDB连接已关闭');
+  try {
+    await closeDB();
     process.exit(0);
-  });
+  } catch (error) {
+    console.error('关闭服务器时出错:', error);
+    process.exit(1);
+  }
 });
 
 module.exports = app;

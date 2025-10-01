@@ -16,5 +16,10 @@
         "Access-Control-Allow-Headers": "Origin, X-Requested-With, Content-Type, Accept, Authorization"
       }
     }
-  ]
+  ],
+  "functions": {
+    "index.js": {
+      "timeout": 10
+    }
+  }
 }
