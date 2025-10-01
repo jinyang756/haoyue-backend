@@ -3,6 +3,7 @@ const Stock = require('../models/Stock');
 const axios = require('axios');
 const { validationResult } = require('express-validator');
 const { logger } = require('../utils/logger');
+const { isMongoDBConnected } = require('../config/db');
 
 // 模拟股票数据
 const mockStocks = [
@@ -83,10 +84,7 @@ const mockStocks = [
   }
 ];
 
-// 检查MongoDB连接状态
-const isMongoDBConnected = () => {
-  return mongoose.connection.readyState === 1; // 1表示已连接
-};
+// MongoDB连接状态检查已从db.js导入
 
 // 获取所有股票列表
 exports.getAllStocks = async (req, res) => {

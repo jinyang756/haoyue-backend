@@ -200,9 +200,11 @@ docker run -d -p 5001:5001 --env-file .env --name haoyue-api haoyue-api
 1. 将代码推送到GitHub仓库
 2. 在Vercel上导入GitHub仓库
 3. 配置环境变量（在Vercel控制台的Settings > Environment Variables中）
-   - MONGO_URI: MongoDB连接字符串
+   - MONGODB_URI: MongoDB连接字符串 (推荐使用)
+   - 或 MONGO_URI: MongoDB连接字符串 (向后兼容)
    - JWT_SECRET: JWT密钥
-   - 其他必要的环境变量
+   - NODE_ENV: production
+   - 其他必要的环境变量 (参考.env.example文件)
 4. 点击Deploy按钮开始部署
 
 ## API文档

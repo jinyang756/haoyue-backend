@@ -1,11 +1,27 @@
 const schedule = require('node-schedule');
 const stockService = require('./stock.service');
-const { logger } = require('../utils/logger');
+const { logger, logPerformance } = require('../utils/logger');
 const Stock = require('../models/Stock');
+const mongoose = require('mongoose');
+
+// 创建任务执行记录集合
+const JobExecutionRecord = mongoose.model('JobExecutionRecord', {
+  jobName: { type: String, required: true },
+  status: { type: String, enum: ['started', 'completed', 'failed'], default: 'started' },
+  startTime: { type: Date, default: Date.now },
+  endTime: { type: Date },
+  durationMs: { type: Number },
+  successCount: { type: Number, default: 0 },
+  failureCount: { type: Number, default: 0 },
+  error: { type: String },
+  metadata: { type: Object }
+});
 
 class ScheduleService {
   constructor() {
     this.jobs = {};
+    this.jobLocks = new Map(); // 用于防止任务重叠执行的锁
+    this.jobLastRun = new Map(); // 记录任务上次运行时间
     this.initializeJobs();
   }
 

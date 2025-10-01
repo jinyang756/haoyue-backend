@@ -2,6 +2,9 @@ const User = require('../models/User');
 const { validationResult } = require('express-validator');
 const crypto = require('crypto');
 const sendEmail = require('../utils/email');
+const { isMongoDBConnected } = require('../config/db');
+const { mockUsers, generateMockToken, mockMatchPassword, addMockUser } = require('../utils/mockDataManager');
+const jwt = require('jsonwebtoken');
 
 // 用户注册
 exports.register = async (req, res) => {
@@ -13,66 +16,121 @@ exports.register = async (req, res) => {
 
     const { username, email, password, name } = req.body;
 
-    // 检查用户是否已存在
-    let user = await User.findOne({ 
-      $or: [{ email }, { username }] 
-    });
+    // 检查MongoDB连接状态
+    if (isMongoDBConnected()) {
+      // MongoDB已连接，使用真实数据库
+      // 检查用户是否已存在
+      let user = await User.findOne({ 
+        $or: [{ email }, { username }] 
+      });
 
-    if (user) {
-      return res.status(400).json({
-        message: '用户已存在，请使用其他邮箱或用户名'
+      if (user) {
+        return res.status(400).json({
+          message: '用户已存在，请使用其他邮箱或用户名'
+        });
+      }
+
+      // 创建验证token
+      const verificationToken = crypto.randomBytes(20).toString('hex');
+      
+      // 创建新用户
+      user = new User({
+        username,
+        email,
+        password,
+        name,
+        verificationToken,
+        verificationTokenExpire: Date.now() + 24 * 60 * 60 * 1000 // 24小时有效期
+      });
+
+      await user.save();
+
+      // 发送验证邮件
+      const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
+      
+      const message = `
+        <h1>欢迎使用皓月量化智能引擎</h1>
+        <p>请点击下方链接验证您的邮箱：</p>
+        <a href="${verificationUrl}" target="_blank">验证邮箱</a>
+        <p>如果您没有注册过我们的服务，请忽略此邮件。</p>
+      `;
+
+      await sendEmail({
+        email: user.email,
+        subject: '邮箱验证 - 皓月量化智能引擎',
+        html: message
+      });
+
+      // 生成token
+      const token = user.generateToken();
+      const refreshToken = user.generateRefreshToken();
+
+      res.status(201).json({
+        success: true,
+        message: '注册成功！请查收邮箱验证邮件',
+        token,
+        refreshToken,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          emailVerified: user.emailVerified
+        }
+      });
+    } else {
+      // MongoDB未连接，使用模拟数据
+      console.log('MongoDB未连接，使用模拟数据进行注册');
+      
+      // 检查用户是否已存在
+      const existingUser = mockUsers.find(user => user.email === email || user.username === username);
+      
+      if (existingUser) {
+        return res.status(400).json({
+          message: '用户已存在，请使用其他邮箱或用户名'
+        });
+      }
+
+      // 创建验证token
+      const verificationToken = crypto.randomBytes(20).toString('hex');
+      
+      // 创建新模拟用户
+      const newUser = addMockUser({
+        username,
+        email,
+        password: password, // 在实际应用中应该加密存储
+        name,
+        verificationToken,
+        emailVerified: false,
+        role: 'user',
+        status: 'active',
+        verificationTokenExpire: Date.now() + 24 * 60 * 60 * 1000 // 24小时有效期
+      });
+
+      // 模拟发送验证邮件
+      const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
+      console.log(`模拟发送验证邮件到 ${email}，验证链接: ${verificationUrl}`);
+
+      // 生成模拟token
+      const token = generateMockToken(newUser.id, newUser.role);
+      const refreshToken = generateMockToken(newUser.id, newUser.role + '-refresh');
+
+      res.status(201).json({
+        success: true,
+        message: '注册成功！请查收邮箱验证邮件',
+        token,
+        refreshToken,
+        user: {
+          id: newUser.id,
+          username: newUser.username,
+          email: newUser.email,
+          name: newUser.name,
+          role: newUser.role,
+          emailVerified: newUser.emailVerified
+        }
       });
     }
-
-    // 创建验证token
-    const verificationToken = crypto.randomBytes(20).toString('hex');
-    
-    // 创建新用户
-    user = new User({
-      username,
-      email,
-      password,
-      name,
-      verificationToken,
-      verificationTokenExpire: Date.now() + 24 * 60 * 60 * 1000 // 24小时有效期
-    });
-
-    await user.save();
-
-    // 发送验证邮件
-    const verificationUrl = `${req.protocol}://${req.get('host')}/api/auth/verify-email/${verificationToken}`;
-    
-    const message = `
-      <h1>欢迎使用皓月量化智能引擎</h1>
-      <p>请点击下方链接验证您的邮箱：</p>
-      <a href="${verificationUrl}" target="_blank">验证邮箱</a>
-      <p>如果您没有注册过我们的服务，请忽略此邮件。</p>
-    `;
-
-    await sendEmail({
-      email: user.email,
-      subject: '邮箱验证 - 皓月量化智能引擎',
-      html: message
-    });
-
-    // 生成token
-    const token = user.generateToken();
-    const refreshToken = user.generateRefreshToken();
-
-    res.status(201).json({
-      success: true,
-      message: '注册成功！请查收邮箱验证邮件',
-      token,
-      refreshToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        emailVerified: user.emailVerified
-      }
-    });
   } catch (error) {
     console.error('注册错误:', error);
     res.status(500).json({
@@ -125,54 +183,109 @@ exports.login = async (req, res) => {
 
     const { email, password } = req.body;
 
-    // 检查用户是否存在
-    const user = await User.findOne({ email }).select('+password');
+    // 检查MongoDB连接状态
+    if (isMongoDBConnected()) {
+      // MongoDB已连接，使用真实数据库
+      // 检查用户是否存在
+      const user = await User.findOne({ email }).select('+password');
 
-    if (!user) {
-      return res.status(401).json({
-        message: '邮箱或密码错误'
-      });
-    }
-
-    // 检查用户状态
-    if (user.status !== 'active') {
-      return res.status(403).json({
-        message: user.status === 'inactive' ? '账号未激活' : '账号已被禁用'
-      });
-    }
-
-    // 验证密码
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-      return res.status(401).json({
-        message: '邮箱或密码错误'
-      });
-    }
-
-    // 更新最后登录时间
-    await user.updateLastLogin();
-
-    // 生成token
-    const token = user.generateToken();
-    const refreshToken = user.generateRefreshToken();
-
-    res.status(200).json({
-      success: true,
-      token,
-      refreshToken,
-      user: {
-        id: user._id,
-        username: user.username,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        avatar: user.avatar,
-        emailVerified: user.emailVerified,
-        preferences: user.preferences,
-        subscription: user.subscription
+      if (!user) {
+        return res.status(401).json({
+          message: '邮箱或密码错误'
+        });
       }
-    });
+
+      // 检查用户状态
+      if (user.status !== 'active') {
+        return res.status(403).json({
+          message: user.status === 'inactive' ? '账号未激活' : '账号已被禁用'
+        });
+      }
+
+      // 验证密码
+      const isMatch = await user.matchPassword(password);
+
+      if (!isMatch) {
+        return res.status(401).json({
+          message: '邮箱或密码错误'
+        });
+      }
+
+      // 更新最后登录时间
+      await user.updateLastLogin();
+
+      // 生成token
+      const token = user.generateToken();
+      const refreshToken = user.generateRefreshToken();
+
+      res.status(200).json({
+        success: true,
+        token,
+        refreshToken,
+        user: {
+          id: user._id,
+          username: user.username,
+          email: user.email,
+          name: user.name,
+          role: user.role,
+          avatar: user.avatar,
+          emailVerified: user.emailVerified,
+          preferences: user.preferences,
+          subscription: user.subscription
+        }
+      });
+    } else {
+      // MongoDB未连接，使用模拟数据
+      console.log('MongoDB未连接，使用模拟数据进行登录');
+      
+      // 查找模拟用户
+      const mockUser = mockUsers.find(user => user.email === email);
+      
+      if (!mockUser) {
+        return res.status(401).json({
+          message: '邮箱或密码错误'
+        });
+      }
+
+      // 检查用户状态
+      if (mockUser.status !== 'active') {
+        return res.status(403).json({
+          message: mockUser.status === 'inactive' ? '账号未激活' : '账号已被禁用'
+        });
+      }
+
+      // 验证密码
+      const isMatch = mockMatchPassword(password);
+
+      if (!isMatch) {
+        return res.status(401).json({
+          message: '邮箱或密码错误'
+        });
+      }
+
+      // 更新最后登录时间
+      mockUser.lastLogin = new Date();
+
+      // 生成模拟token
+      const token = generateMockToken(mockUser.id, mockUser.role);
+      const refreshToken = generateMockToken(mockUser.id, mockUser.role + '-refresh');
+
+      res.status(200).json({
+        success: true,
+        token,
+        refreshToken,
+        user: {
+          id: mockUser.id,
+          username: mockUser.username,
+          email: mockUser.email,
+          name: mockUser.name,
+          role: mockUser.role,
+          emailVerified: mockUser.emailVerified,
+          preferences: mockUser.preferences || {},
+          subscription: mockUser.subscription || {}
+        }
+      });
+    }
   } catch (error) {
     console.error('登录错误:', error);
     res.status(500).json({

@@ -5,6 +5,7 @@ const User = require('../models/User');
 const { validationResult } = require('express-validator');
 const axios = require('axios');
 const { spawn } = require('child_process');
+const { isMongoDBConnected } = require('../config/db');
 
 // 模拟数据
 const mockStocks = [
@@ -66,10 +67,7 @@ const mockAnalyses = [
   }
 ];
 
-// 检查MongoDB连接状态
-const isMongoDBConnected = () => {
-  return mongoose.connection.readyState === 1; // 1表示已连接
-};
+// MongoDB连接状态检查已从db.js导入
 
 // 创建AI分析任务
 exports.createAnalysis = async (req, res) => {
