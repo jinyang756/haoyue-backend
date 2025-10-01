@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+const { auth0Auth } = require('../config/auth0');
 // 保护路由中间件
 exports.protect = async (req, res, next) => {
   try {
@@ -223,4 +224,17 @@ exports.errorHandler = (err, req, res, next) => {
     message: err.message || '服务器内部错误',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
+};
+
+// 根据配置获取认证中间件
+exports.getAuthMiddleware = () => {
+  // 检查是否使用Auth0认证
+  const useAuth0 = process.env.USE_AUTH0 === 'true';
+  
+  if (useAuth0) {
+    return auth0Auth;
+  } else {
+    // 继续使用现有的JWT认证
+    return [this.protect];
+  }
 };

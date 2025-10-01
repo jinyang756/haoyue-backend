@@ -82,6 +82,39 @@ exports.register = async (req, res) => {
   }
 };
 
+// 使用Auth0管理API获取用户列表
+exports.getAuth0Users = async (req, res) => {
+  try {
+    const { getManagementApiToken } = require('../config/auth0');
+    const axios = require('axios');
+    
+    // 获取管理API令牌
+    const token = await getManagementApiToken();
+    
+    // 使用管理API令牌获取用户列表
+    const response = await axios.get(
+      `https://${process.env.AUTH0_DOMAIN}/api/v2/users`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
+    
+    res.status(200).json({
+      success: true,
+      message: '成功获取Auth0用户列表',
+      users: response.data
+    });
+  } catch (error) {
+    console.error('获取Auth0用户列表失败:', error);
+    res.status(500).json({
+      message: '获取用户列表失败',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
 // 用户登录
 exports.login = async (req, res) => {
   try {

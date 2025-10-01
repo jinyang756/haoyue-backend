@@ -2,7 +2,11 @@ const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
 const authController = require('../controllers/auth.controller');
-const { protect, validateRequest } = require('../middleware/auth');
+const { protect, validateRequest, getAuthMiddleware, authorize } = require('../middleware/auth');
+const { getManagementApiToken } = require('../config/auth0');
+
+// 获取当前配置的认证中间件
+const authMiddleware = getAuthMiddleware();
 
 /**
  * @swagger
@@ -301,7 +305,7 @@ router.post(
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/me', protect, authController.getCurrentUser);
+router.get('/me', [...authMiddleware], authController.getCurrentUser);
 
 /**
  * @swagger
@@ -321,7 +325,7 @@ router.get('/me', protect, authController.getCurrentUser);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.post('/logout', protect, authController.logout);
+router.post('/logout', [...authMiddleware], authController.logout);
 
 /**
  * @swagger
@@ -354,4 +358,85 @@ router.post(
   authController.resendVerificationEmail
 );
 
-module.exports = router;
+/**
+ * @swagger
+ * /api/auth/get-management-token: 
+ *   get: 
+ *     summary: 获取Auth0管理API令牌
+ *     tags: [认证管理]
+ *     security: 
+ *       - bearerAuth: []
+ *     responses: 
+ *       200: 
+ *         description: 成功获取管理API令牌
+ *         content: 
+ *           application/json: 
+ *             schema: 
+ *               type: object
+ *               properties: 
+ *                 success: 
+ *                   type: boolean
+ *                 message: 
+ *                   type: string
+ *                 access_token: 
+ *                   type: string
+ *       401: 
+ *         description: 未授权，需要有效的访问令牌
+ *       500: 
+ *         description: 服务器错误
+ */
+// 获取Auth0管理API令牌 (仅管理员)
+router.get('/get-management-token', protect, authorize('admin'), async (req, res) => {
+  try {
+    // 获取管理API令牌
+    const token = await getManagementApiToken();
+    
+    res.status(200).json({
+      success: true,
+      message: '成功获取Auth0管理API令牌',
+      access_token: token
+    });
+  } catch (error) {
+    console.error('获取Auth0管理API令牌失败:', error);
+    res.status(500).json({
+      message: '获取管理API令牌失败',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+  /**
+   * @swagger
+   * /api/auth/get-auth0-users: 
+   *   get: 
+   *     summary: 使用Auth0管理API获取用户列表
+   *     tags: [认证管理]
+   *     security: 
+   *       - bearerAuth: []
+   *     responses: 
+   *       200: 
+   *         description: 成功获取用户列表
+   *         content: 
+   *           application/json: 
+   *             schema: 
+   *               type: object
+   *               properties: 
+   *                 success: 
+   *                   type: boolean
+   *                 message: 
+   *                   type: string
+   *                 users: 
+   *                   type: array
+   *                   items: 
+   *                     type: object
+   *       401: 
+   *         description: 未授权，需要有效的访问令牌
+   *       403: 
+   *         description: 权限不足，需要管理员权限
+   *       500: 
+   *         description: 服务器错误
+   */
+  // 使用Auth0管理API获取用户列表 (仅管理员)
+  router.get('/get-auth0-users', protect, authorize('admin'), authController.getAuth0Users);
+
+  module.exports = router;
