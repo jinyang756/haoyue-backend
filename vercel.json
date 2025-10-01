@@ -2,12 +2,6 @@
   "version": 2,
   "installCommand": "npm install",
   "buildCommand": "echo 'No build required for Node.js application'",
-  "builds": [
-    {
-      "src": "index.js",
-      "use": "@vercel/node"
-    }
-  ],
   "routes": [
     {
       "src": "/(.*)",
