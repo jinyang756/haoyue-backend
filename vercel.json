@@ -21,7 +21,6 @@
   ],
   "functions": {
     "index.js": {
-      "timeout": 30,
       "memory": 1024
     }
   },
