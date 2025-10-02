@@ -10,9 +10,6 @@ const path = require('path');
 // 导入自定义工具
 const { logger, requestLogger, errorLogger, logPerformance } = require('./utils/logger.js');
 
-// 导入定时任务服务，确保在服务器启动时初始化定时任务
-require('./services/schedule.service');
-
 // 导入Swagger相关模块
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpecs = require('./swagger.js');
@@ -94,24 +91,30 @@ const staticOptions = {
   }
 };
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
-
-// 创建上传目录（如果不存在）
-const uploadsDir = path.join(__dirname, 'uploads');
-const fs = require('fs');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  logger.info(`创建上传目录: ${uploadsDir}`);
+// 只在非Vercel环境中提供静态文件服务
+if (process.env.VERCEL !== '1') {
+  app.use('/uploads', express.static(path.join(__dirname, 'uploads'), staticOptions));
+  
+  // 创建上传目录（如果不存在）
+  const uploadsDir = path.join(__dirname, 'uploads');
+  const fs = require('fs');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+    logger.info(`创建上传目录: ${uploadsDir}`);
+  }
 }
 
 // 连接数据库 - 使用性能监控包装
-logPerformance('数据库连接', connectDB).catch(error => {
-  logger.error('数据库连接初始化失败:', error.message);
-  // 在开发环境中继续运行，但在生产环境中可能需要退出
-  if (process.env.NODE_ENV === 'production') {
-    process.exit(1);
-  }
-});
+// 在Vercel环境中，我们不立即连接数据库，而是在需要时连接
+if (process.env.VERCEL !== '1') {
+  logPerformance('数据库连接', connectDB).catch(error => {
+    logger.error('数据库连接初始化失败:', error.message);
+    // 在开发环境中继续运行，但在生产环境中可能需要退出
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+  });
+}
 
 // 路由导入
 const authRoutes = require('./routes/auth.routes');
@@ -121,14 +124,16 @@ const analysisRoutes = require('./routes/analysis.routes');
 const recommendationRoutes = require('./routes/recommendation.routes');
 const newsRoutes = require('./routes/news.routes');
 
-// 配置Swagger文档路由
-app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
-  explorer: true,
-  swaggerOptions: {
-    persistAuthorization: true
-  }
-}));
-logger.info(`Swagger文档已启用: /api/docs`);
+// 配置Swagger文档路由（只在非Vercel环境中启用）
+if (process.env.VERCEL !== '1') {
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+    explorer: true,
+    swaggerOptions: {
+      persistAuthorization: true
+    }
+  }));
+  logger.info(`Swagger文档已启用: /api/docs`);
+}
 
 // 健康检查路由 - 增强版本
 app.get('/health', (req, res) => {
@@ -138,6 +143,7 @@ app.get('/health', (req, res) => {
     timestamp: new Date().toISOString(),
     version: process.env.APP_VERSION || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
+    vercel: process.env.VERCEL === '1' ? 'true' : 'false',
     database: {
       type: 'MongoDB',
       connected: isMongoDBConnected(),
@@ -166,6 +172,8 @@ app.get('/health', (req, res) => {
     plainText += `Status: ${healthStatus.status}\n`;
     plainText += `Time: ${healthStatus.timestamp}\n`;
     plainText += `Version: ${healthStatus.version}\n`;
+    plainText += `Environment: ${healthStatus.environment}\n`;
+    plainText += `Vercel: ${healthStatus.vercel}\n`;
     plainText += `Database: ${healthStatus.database.connectionStatus}\n`;
     res.status(200).send(plainText);
   } else {
@@ -187,7 +195,8 @@ app.get('/', (req, res) => {
     message: '欢迎使用皓月量化智能引擎API',
     version: process.env.APP_VERSION || '1.0.0',
     environment: process.env.NODE_ENV || 'development',
-    documentation: '/api/docs',
+    vercel: process.env.VERCEL === '1' ? 'true' : 'false',
+    documentation: process.env.VERCEL === '1' ? 'Swagger文档在Vercel环境中不可用' : '/api/docs',
     healthCheck: '/health',
     endpoints: {
       auth: '/api/auth',
@@ -241,101 +250,101 @@ app.use((req, res) => {
     path: req.path,
     method: req.method,
     availablePaths: {
-      docs: '/api/docs',
+      docs: process.env.VERCEL === '1' ? 'Swagger文档在Vercel环境中不可用' : '/api/docs',
       health: '/health',
       root: '/'
     }
   });
 });
 
-// 启动服务器
-const server = app.listen(PORT, () => {
-  const startupMessage = {
-    service: '皓月量化智能引擎API服务',
-    port: PORT,
-    environment: process.env.NODE_ENV || 'development',
-    apiUrl: `http://localhost:${PORT}/api`,
-    swaggerDocs: `http://localhost:${PORT}/api/docs`,
-    healthCheck: `http://localhost:${PORT}/health`
-  };
-  
-  logger.info('服务器启动成功', startupMessage);
-  
-  // 在非生产环境中，打印到控制台以便开发调试
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('\x1b[32m%s\x1b[0m', `✅ 服务器启动成功: http://localhost:${PORT}`);
-    console.log('\x1b[36m%s\x1b[0m', `📚 Swagger文档: http://localhost:${PORT}/api/docs`);
-    console.log('\x1b[36m%s\x1b[0m', `🏥 健康检查: http://localhost:${PORT}/health`);
-    console.log('\x1b[33m%s\x1b[0m', `🌍 环境: ${process.env.NODE_ENV || 'development'}`);
-  }
-});
-
-// 设置服务器超时时间（2分钟）
-server.timeout = 120000;
-
 // Vercel会自动处理HTTP请求，通过module.exports导出app
-
-// 优雅关闭处理 - 增强版本
-const shutdown = async () => {
-  logger.info('开始优雅关闭服务器...');
-  
-  try {
-    // 关闭HTTP服务器，不再接受新请求
-    if (server && typeof server.close === 'function') {
-      await new Promise((resolve, reject) => {
-        server.close((err) => {
-          if (err) {
-            logger.error('HTTP服务器关闭出错:', err);
-            reject(err);
-          } else {
-            logger.info('HTTP服务器已成功关闭');
-            resolve();
-          }
-        });
-      });
-    }
-    
-    // 关闭数据库连接
-    if (typeof closeDB === 'function') {
-      await closeDB();
-      logger.info('数据库连接已关闭');
-    }
-    
-    // 清理其他资源
-    logger.info('所有资源已成功释放');
-    process.exit(0);
-  } catch (error) {
-    logger.error('优雅关闭过程中发生错误:', error);
-    process.exit(1);
-  }
-};
-
-// 捕获各种终止信号
-process.on('SIGINT', () => {
-  logger.info('接收到SIGINT信号（Ctrl+C），开始关闭服务器...');
-  shutdown();
-});
-
-process.on('SIGTERM', () => {
-  logger.info('接收到SIGTERM信号，开始关闭服务器...');
-  shutdown();
-});
-
-process.on('uncaughtException', (err) => {
-  logger.error('未捕获的异常:', err);
-  // 在非生产环境中保持进程运行以便调试
-  if (process.env.NODE_ENV !== 'production') {
-    logger.warn('在开发环境中，进程将继续运行以方便调试');
-  } else {
-    // 在生产环境中，尝试优雅关闭
-    shutdown();
-  }
-});
-
-process.on('unhandledRejection', (reason, promise) => {
-  logger.error('未处理的Promise拒绝:', { reason, promise });
-  // 不像未捕获的异常那样严重，通常不需要立即关闭服务器
-});
-
-// 导出app供Vercel使用
 module.exports = app;
+
+// 只在非Vercel环境中启动服务器
+if (process.env.VERCEL !== '1') {
+  const server = app.listen(PORT, () => {
+    const startupMessage = {
+      service: '皓月量化智能引擎API服务',
+      port: PORT,
+      environment: process.env.NODE_ENV || 'development',
+      apiUrl: `http://localhost:${PORT}/api`,
+      swaggerDocs: `http://localhost:${PORT}/api/docs`,
+      healthCheck: `http://localhost:${PORT}/health`
+    };
+    
+    logger.info('服务器启动成功', startupMessage);
+    
+    // 在非生产环境中，打印到控制台以便开发调试
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('\x1b[32m%s\x1b[0m', `✅ 服务器启动成功: http://localhost:${PORT}`);
+      console.log('\x1b[36m%s\x1b[0m', `📚 Swagger文档: http://localhost:${PORT}/api/docs`);
+      console.log('\x1b[36m%s\x1b[0m', `🏥 健康检查: http://localhost:${PORT}/health`);
+      console.log('\x1b[33m%s\x1b[0m', `🌍 环境: ${process.env.NODE_ENV || 'development'}`);
+    }
+  });
+
+  // 设置服务器超时时间（2分钟）
+  server.timeout = 120000;
+
+  // 优雅关闭处理 - 增强版本
+  const shutdown = async () => {
+    logger.info('开始优雅关闭服务器...');
+    
+    try {
+      // 关闭HTTP服务器，不再接受新请求
+      if (server && typeof server.close === 'function') {
+        await new Promise((resolve, reject) => {
+          server.close((err) => {
+            if (err) {
+              logger.error('HTTP服务器关闭出错:', err);
+              reject(err);
+            } else {
+              logger.info('HTTP服务器已成功关闭');
+              resolve();
+            }
+          });
+        });
+      }
+      
+      // 关闭数据库连接
+      if (typeof closeDB === 'function') {
+        await closeDB();
+        logger.info('数据库连接已关闭');
+      }
+      
+      // 清理其他资源
+      logger.info('所有资源已成功释放');
+      process.exit(0);
+    } catch (error) {
+      logger.error('优雅关闭过程中发生错误:', error);
+      process.exit(1);
+    }
+  };
+
+  // 捕获各种终止信号
+  process.on('SIGINT', () => {
+    logger.info('接收到SIGINT信号（Ctrl+C），开始关闭服务器...');
+    shutdown();
+  });
+
+  process.on('SIGTERM', () => {
+    logger.info('接收到SIGTERM信号，开始关闭服务器...');
+    shutdown();
+  });
+
+  process.on('uncaughtException', (err) => {
+    logger.error('未捕获的异常:', err);
+    // 在非生产环境中保持进程运行以便调试
+    if (process.env.NODE_ENV !== 'production') {
+      logger.warn('在开发环境中，进程将继续运行以方便调试');
+    } else {
+      // 在生产环境中，尝试优雅关闭
+      shutdown();
+    }
+  });
+
+  process.on('unhandledRejection', (reason, promise) => {
+    logger.error('未处理的Promise拒绝:', { reason, promise });
+    // 不像未捕获的异常那样严重，通常不需要立即关闭服务器
+  });
+}

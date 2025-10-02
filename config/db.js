@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const { attachDatabasePool } = require('@vercel/functions');
 const { logger } = require('../utils/logger');
 
 // Vercel production MongoDB client
@@ -35,13 +34,7 @@ const mongooseOptions = {
   maxPoolSize: 10,                // 连接池最大连接数
   minPoolSize: 2,                 // 连接池最小连接数
   heartbeatFrequencyMS: 15000,    // 心跳频率
-  appName: 'haoyue-backend',
-  // 添加serverApi选项以支持MongoDB Atlas的Stable API
-  serverApi: {
-    version: '1',
-    strict: true,
-    deprecationErrors: true,
-  }
+  appName: 'haoyue-backend'
 };
 
 // MongoDB客户端配置选项
@@ -54,11 +47,7 @@ const mongoClientOptions = {
   maxPoolSize: 10,                // 连接池最大连接数
   minPoolSize: 2,                 // 连接池最小连接数
   heartbeatFrequencyMS: 15000,    // 心跳频率
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+  serverApi: ServerApiVersion.v1
 };
 
 /**
@@ -73,39 +62,12 @@ const createMongoClient = () => {
   }
   
   try {
-    if (process.env.NODE_ENV === 'development') {
-      // 在开发模式下，使用全局变量以便在模块重载时保留值
-      if (!global._mongoClient) {
-        global._mongoClient = new MongoClient(uri, mongoClientOptions);
-        logger.debug('创建了新的MongoDB客户端（开发模式）');
-      }
-      return global._mongoClient;
-    } else {
-      // 在生产模式下，最好不使用全局变量
-      const client = new MongoClient(uri, mongoClientOptions);
-      
-      // 附加客户端以确保在函数暂停时正确清理
-      attachDatabasePool(client);
-      logger.debug('创建了新的MongoDB客户端（生产模式）');
-      return client;
-    }
+    const client = new MongoClient(uri, mongoClientOptions);
+    logger.debug('创建了新的MongoDB客户端');
+    return client;
   } catch (error) {
     logger.error('创建MongoDB客户端失败:', error.message);
     return null;
-  }
-};
-
-// 检查是否在Vercel环境中运行
-const initializeVercelClient = () => {
-  if (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1') {
-    try {
-      // 直接创建MongoDB客户端
-      mongoClient = createMongoClient();
-      isVercel = true;
-      logger.info('Vercel MongoDB客户端加载成功');
-    } catch (err) {
-      logger.error('加载Vercel MongoDB客户端失败:', err.message);
-    }
   }
 };
 
@@ -127,13 +89,18 @@ const connectDB = async () => {
     // 增加连接尝试计数器
     connectionAttempts++;
     
-    // 初始化Vercel客户端
-    initializeVercelClient();
-
-    // 在生产环境中使用Vercel MongoDB客户端
-    if (isVercel && mongoClient) {
+    // 在Vercel环境中使用MongoClient
+    if (process.env.VERCEL === '1') {
       try {
+        const uri = getMongoUri();
+        if (!uri) {
+          throw new Error('Vercel环境中未配置MongoDB URI');
+        }
+        
+        // 使用MongoClient进行连接（更适合Vercel无服务器环境）
+        mongoClient = new MongoClient(uri, mongoClientOptions);
         await mongoClient.connect();
+        isVercel = true;
         logger.info('MongoDB连接成功 (Vercel客户端)');
         return { connection: { host: 'Vercel MongoDB Atlas' } };
       } catch (vercelError) {
@@ -230,21 +197,6 @@ const closeDB = async () => {
 };
 
 /**
- * 数据库断开重连处理
- */
-// Only set up Mongoose event listeners if not using Vercel client
-if (!isVercel) {
-  mongoose.connection.on('disconnected', () => {
-    logger.warn('MongoDB连接已断开，尝试重连...');
-    setTimeout(connectDB, 5000);
-  });
-
-  mongoose.connection.on('error', (err) => {
-    logger.error('MongoDB连接错误:', err);
-  });
-}
-
-/**
  * Get MongoDB client instance
  * Returns Mongoose connection in development, Vercel client in production
  */
@@ -262,59 +214,9 @@ const isMongoDBConnected = () => {
   return mongoose.connection.readyState === 1;
 };
 
-/**
- * 应用配置
- */
-const config = {
-  port: process.env.PORT || 5000,
-  env: process.env.NODE_ENV || 'development',
-  jwt: {
-    secret: process.env.JWT_SECRET || 'your_jwt_secret_key',
-    expiresIn: process.env.JWT_EXPIRES_IN || '7d',
-    refreshSecret: process.env.JWT_REFRESH_SECRET || 'your_refresh_secret_key',
-    refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d'
-  },
-  cors: {
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key']
-  },
-  rateLimit: {
-    windowMs: process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000, // 15分钟
-    max: process.env.RATE_LIMIT_MAX || 100 // 最大请求数
-  },
-  email: {
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: process.env.SMTP_PORT || 587,
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-    from: `${process.env.APP_NAME || '皓月量化智能引擎'} <${process.env.SMTP_USER}>`
-  },
-  apiKeys: {
-    alphaVantage: process.env.ALPHA_VANTAGE_API_KEY,
-    finnhub: process.env.FINNHUB_API_KEY,
-    polygon: process.env.POLYGON_API_KEY,
-    openai: process.env.OPENAI_API_KEY
-  },
-  ai: {
-    modelUrl: process.env.AI_MODEL_URL || 'https://api.openai.com/v1/chat/completions',
-    confidenceThreshold: process.env.AI_CONFIDENCE_THRESHOLD || 70,
-    analysisInterval: process.env.ANALYSIS_INTERVAL || 3600000 // 1小时
-  },
-  logging: {
-    level: process.env.LOG_LEVEL || 'info',
-    file: process.env.LOG_FILE || './logs/app.log'
-  },
-  upload: {
-    path: process.env.UPLOAD_PATH || './uploads',
-    maxSize: process.env.UPLOAD_MAX_SIZE || 5 * 1024 * 1024 // 5MB
-  }
-};
-
 module.exports = {
   connectDB,
   closeDB,
-  config,
   getMongoClient,
   isMongoDBConnected,
   mongoClient,

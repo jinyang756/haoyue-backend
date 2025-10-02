@@ -696,6 +696,14 @@ class ScheduleService {
 // 创建单例实例
 const scheduleService = new ScheduleService();
 
+// 只在非Vercel环境中自动初始化定时任务
+if (process.env.VERCEL !== '1') {
+  // 初始化定时任务
+  scheduleService.initJobs();
+} else {
+  logger.info('检测到Vercel环境，跳过定时任务初始化');
+}
+
 // 导出服务实例
 module.exports = scheduleService;
 

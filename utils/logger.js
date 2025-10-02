@@ -63,6 +63,8 @@ if (!isServerless) {
   } catch (error) {
     console.warn('无法创建日志目录，将只使用控制台日志:', error.message);
   }
+} else {
+  console.log('检测到无服务器环境，将只使用控制台日志');
 }
 
 // 创建日志器配置
