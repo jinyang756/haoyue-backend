@@ -90,7 +90,7 @@ const connectDB = async () => {
     connectionAttempts++;
     
     // 在Vercel环境中使用MongoClient
-    if (process.env.VERCEL === '1') {
+    if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'production') {
       try {
         const uri = getMongoUri();
         if (!uri) {

@@ -409,4 +409,4 @@ sudo certbot --nginx -d api.haoyuequant.com
 
 ## 许可证
 
-本项目采用MIT许可证。
+本项目采用MIT许可证

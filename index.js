@@ -39,7 +39,7 @@ const PORT = process.env.PORT || 5001;
 // CORS配置
 const corsOptions = {
   origin: process.env.NODE_ENV === 'production' 
-    ? process.env.FRONTEND_URL || 'https://haoyue-frontend.vercel.app' 
+    ? process.env.FRONTEND_URL || ['https://haoyue-frontend.vercel.app', 'https://zhengyutouzi.com'] 
     : '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

@@ -8,9 +8,9 @@
 
 | 环境变量名 | 描述 | 示例值 |
 |-----------|------|--------|
-| `MONGODB_URI` | MongoDB连接字符串 | `mongodb+srv://username:password@cluster.mongodb.net/database` |
-| `JWT_SECRET` | JWT密钥 | `your_jwt_secret_key_here` |
-| `JWT_REFRESH_SECRET` | JWT刷新密钥 | `your_refresh_secret_key_here` |
+| `MONGODB_URI` | MongoDB连接字符串 | `mongodb+srv://Vercel-Admin-haoyue:MypbYEewIVAA78qd@haoyue.7qpdasq.mongodb.net/?retryWrites=true&w=majority` |
+| `JWT_SECRET` | JWT密钥 | `@jwt_secret` (Vercel密钥引用) |
+| `JWT_REFRESH_SECRET` | JWT刷新密钥 | `@jwt_refresh_secret` (Vercel密钥引用) |
 | `NODE_ENV` | 运行环境 | `production` |
 
 ### 2. 构建和部署设置
@@ -28,16 +28,24 @@ Vercel会自动使用项目根目录下的 `vercel.json` 配置文件进行部�
     {
       "src": "api/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/test.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/test",
-      "dest": "api/test.js"
+      "src": "/api/docs/swagger.json",
+      "dest": "api/index.js"
+    },
+    {
+      "src": "/api/docs",
+      "dest": "api/index.js"
+    },
+    {
+      "src": "/api/docs/(.*)",
+      "dest": "api/index.js"
+    },
+    {
+      "src": "/about",
+      "dest": "api/index.js"
     },
     {
       "src": "/(.*)",
@@ -45,7 +53,10 @@ Vercel会自动使用项目根目录下的 `vercel.json` 配置文件进行部�
     }
   ],
   "env": {
-    "NODE_ENV": "production"
+    "NODE_ENV": "production",
+    "MONGODB_URI": "mongodb+srv://Vercel-Admin-haoyue:MypbYEewIVAA78qd@haoyue.7qpdasq.mongodb.net/?retryWrites=true&w=majority",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_REFRESH_SECRET": "@jwt_refresh_secret"
   }
 }
 ```
