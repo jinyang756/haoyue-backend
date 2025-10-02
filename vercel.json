@@ -4,17 +4,9 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/test.js",
-      "use": "@vercel/node"
     }
   ],
   "routes": [
-    {
-      "src": "/test",
-      "dest": "api/test.js"
-    },
     {
       "src": "/api/docs/swagger.json",
       "dest": "api/index.js"
@@ -38,7 +30,7 @@
   ],
   "env": {
     "NODE_ENV": "production",
-    "MONGODB_URI": "mongodb+srv://Vercel-Admin-haoyue:bKRC0LiH15GpzN4w@haoyue.7qpdasq.mongodb.net/?retryWrites=true&w=majority",
+    "MONGODB_URI": "mongodb+srv://Vercel-Admin-haoyue:MypbYEewIVAA78qd@haoyue.7qpdasq.mongodb.net/?retryWrites=true&w=majority",
     "JWT_SECRET": "@jwt_secret",
     "JWT_REFRESH_SECRET": "@jwt_refresh_secret"
   }

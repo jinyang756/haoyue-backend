@@ -50,7 +50,7 @@
 
 ## 项目结构
 
-```bash
+```
 haoyue-backend/
 ├── config/                 # 配置文件（数据库、邮件等）
 │   └── db.js               # 数据库配置
@@ -357,8 +357,6 @@ sudo certbot --nginx -d api.haoyuequant.com
   mongodump --db haoyue --out /backup/mongo/$(date +%Y%m%d)
   ```
 
-## 常见问题排查
-
 ### 数据库连接问题
 
 - 检查MongoDB服务是否正常运行
@@ -400,6 +398,10 @@ sudo certbot --nginx -d api.haoyuequant.com
 2. 创建功能分支
 3. 提交代码
 4. 创建Pull Request
+
+## 变更日志
+
+项目的变更历史记录在 [CHANGELOG.md](../CHANGELOG.md) 文件中。请在提交PR时更新此文件，记录重要的变更。
 
 ## 文档规范
 

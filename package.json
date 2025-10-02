@@ -16,7 +16,8 @@
     "init-data": "node scripts/init-stock-data.js",
     "init-china-data": "node scripts/init-china-stock-data.js",
     "test-db": "node scripts/test-mongodb-connection.js",
-    "test-swagger-vercel": "node scripts/test-swagger-vercel.js"
+    "test-swagger-vercel": "node scripts/test-swagger-vercel.js",
+    "changelog": "echo 请查看项目根目录下的 CHANGELOG.md 文件获取变更历史"
   },
   "keywords": [
     "stock",

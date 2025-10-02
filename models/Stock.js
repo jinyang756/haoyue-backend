@@ -167,8 +167,7 @@ const StockSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// 索引 - 移除了重复的索引定义，只保留通过schema.index()定义的索引
-StockSchema.index({ symbol: 1 });
+// 索引 - 移除了与unique: true重复的索引定义
 StockSchema.index({ name: 'text', symbol: 'text' });
 StockSchema.index({ sector: 1 });
 StockSchema.index({ industry: 1 });

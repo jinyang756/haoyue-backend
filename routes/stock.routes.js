@@ -213,7 +213,7 @@ router.get('/search', stockController.searchStocks);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/sectors', stockController.getAllSectors);
+router.get('/sectors', stockController.getSectors);
 
 /**
  * @swagger
@@ -253,7 +253,7 @@ router.get('/sectors', stockController.getAllSectors);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:symbol', stockController.getStockBySymbol);
+router.get('/:symbol', stockController.getStockById);
 
 /**
  * @swagger
@@ -341,7 +341,7 @@ router.get('/:symbol/history', stockController.getStockHistory);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:symbol/technical', stockController.getTechnicalIndicators);
+router.get('/:symbol/technical', stockController.getStockTechnicalIndicators);
 
 /**
  * @swagger
