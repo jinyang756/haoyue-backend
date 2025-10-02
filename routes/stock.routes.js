@@ -213,17 +213,24 @@ router.get('/search', stockController.searchStocks);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/sectors', stockController.getSectors);
+router.get('/sectors', stockController.getStockSectors);
 
 /**
  * @swagger
- * /api/stocks/industries:
+ * /api/stocks/{symbol}:
  *   get:
- *     summary: 获取所有具体行业
+ *     summary: 获取股票详情
  *     tags: [股票]
+ *     parameters:
+ *       - in: path
+ *         name: symbol
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: 股票代码
  *     responses:
  *       200:
- *         description: 成功获取具体行业列表
+ *         description: 成功获取股票详情
  *         content:
  *           application/json:
  *             schema:
@@ -231,41 +238,10 @@ router.get('/sectors', stockController.getSectors);
  *               properties:
  *                 message: 
  *                   type: string
- *                 industries: 
- *                   type: array
- *                   items: 
- *                     type: string
- *       500:
- *         description: 服务器错误
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.get('/industries', stockController.getIndustries);
-
-/**
- * @swagger
- * /api/stocks/{id}:
- *   get:
- *     summary: 获取股票详情
- *     tags: [股票]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *         description: 股票ID或代码
- *     responses:
- *       200:
- *         description: 成功获取股票详情
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Stock'
+ *                 stock: 
+ *                   $ref: '#/components/schemas/Stock'
  *       404:
- *         description: 股票不存在
+ *         description: 股票未找到
  *         content:
  *           application/json:
  *             schema:
@@ -277,7 +253,7 @@ router.get('/industries', stockController.getIndustries);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:id', stockController.getStockById);
+router.get('/:symbol', stockController.getStockBySymbol);
 
 /**
  * @swagger
@@ -293,26 +269,14 @@ router.get('/:id', stockController.getStockById);
  *           type: string
  *         description: 股票代码
  *       - in: query
- *         name: start
+ *         name: period
  *         schema:
  *           type: string
- *           format: date
- *         description: 开始日期（YYYY-MM-DD）
- *       - in: query
- *         name: end
- *         schema:
- *           type: string
- *           format: date
- *         description: 结束日期（YYYY-MM-DD）
- *       - in: query
- *         name: interval
- *         schema:
- *           type: string
- *           enum: [daily, weekly, monthly]
- *         description: 数据间隔
+ *           enum: [1d, 5d, 1mo, 3mo, 6mo, 1y, 2y, 5y, 10y, max]
+ *         description: 时间周期
  *     responses:
  *       200:
- *         description: 成功获取股票历史数据
+ *         description: 成功获取历史数据
  *         content:
  *           application/json:
  *             schema:
@@ -325,7 +289,7 @@ router.get('/:id', stockController.getStockById);
  *                   items: 
  *                     $ref: '#/components/schemas/StockHistory'
  *       404:
- *         description: 股票不存在
+ *         description: 股票未找到
  *         content:
  *           application/json:
  *             schema:
@@ -354,7 +318,7 @@ router.get('/:symbol/history', stockController.getStockHistory);
  *         description: 股票代码
  *     responses:
  *       200:
- *         description: 成功获取股票技术指标
+ *         description: 成功获取技术指标
  *         content:
  *           application/json:
  *             schema:
@@ -363,11 +327,9 @@ router.get('/:symbol/history', stockController.getStockHistory);
  *                 message: 
  *                   type: string
  *                 indicators: 
- *                   type: array
- *                   items: 
- *                     $ref: '#/components/schemas/TechnicalIndicator'
+ *                   $ref: '#/components/schemas/TechnicalIndicator'
  *       404:
- *         description: 股票不存在
+ *         description: 股票未找到
  *         content:
  *           application/json:
  *             schema:
@@ -379,61 +341,13 @@ router.get('/:symbol/history', stockController.getStockHistory);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/:symbol/technical', stockController.getStockTechnicalIndicators);
-
-/**
- * @swagger
- * /api/stocks/{symbol}/ai-ratings:
- *   get:
- *     summary: 获取股票AI评级
- *     tags: [股票]
- *     parameters:
- *       - in: path
- *         name: symbol
- *         required: true
- *         schema:
- *           type: string
- *         description: 股票代码
- *     responses:
- *       200:
- *         description: 成功获取股票AI评级
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 message: 
- *                   type: string
- *                 rating: 
- *                   type: object
- *                   properties:
- *                     score: 
- *                       type: number
- *                     recommendation: 
- *                       type: string
- *                     analysisDate: 
- *                       type: string
- *                       format: date-time
- *       404:
- *         description: 股票不存在
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       500:
- *         description: 服务器错误
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.get('/:symbol/ai-ratings', stockController.getStockAiRatings);
+router.get('/:symbol/technical', stockController.getTechnicalIndicators);
 
 /**
  * @swagger
  * /api/stocks/{symbol}/news:
  *   get:
- *     summary: 获取股票新闻
+ *     summary: 获取股票相关新闻
  *     tags: [股票]
  *     parameters:
  *       - in: path
@@ -442,15 +356,9 @@ router.get('/:symbol/ai-ratings', stockController.getStockAiRatings);
  *         schema:
  *           type: string
  *         description: 股票代码
- *       - in: query
- *         name: limit
- *         schema:
- *           type: integer
- *           default: 10
- *         description: 新闻数量限制
  *     responses:
  *       200:
- *         description: 成功获取股票新闻
+ *         description: 成功获取相关新闻
  *         content:
  *           application/json:
  *             schema:
@@ -463,7 +371,7 @@ router.get('/:symbol/ai-ratings', stockController.getStockAiRatings);
  *                   items: 
  *                     $ref: '#/components/schemas/StockNews'
  *       404:
- *         description: 股票不存在
+ *         description: 股票未找到
  *         content:
  *           application/json:
  *             schema:
@@ -479,66 +387,10 @@ router.get('/:symbol/news', stockController.getStockNews);
 
 /**
  * @swagger
- * /api/stocks:
+ * /api/stocks/{symbol}/update:
  *   post:
- *     summary: 添加新股票（仅管理员）
+ *     summary: 更新股票数据
  *     tags: [股票]
- *     security:
- *       - bearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/AddStockRequest'
- *     responses:
- *       201:
- *         description: 成功添加新股票
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Stock'
- *       400:
- *         description: 参数错误
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: 未授权，需要有效的访问令牌
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: 禁止访问，需要管理员权限
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-// 管理员路由
-router.post(
-  '/',
-  protect,
-  authorize('admin'),
-  [
-    check('symbol', '请提供股票代码').not().isEmpty(),
-    check('name', '请提供股票名称').not().isEmpty(),
-    check('exchange', '请提供交易所').not().isEmpty()
-  ],
-  validateRequest,
-  stockController.addNewStock
-);
-
-/**
- * @swagger
- * /api/stocks/{symbol}:
- *   put:
- *     summary: 更新股票数据（仅管理员）
- *     tags: [股票]
- *     security:
- *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: symbol
@@ -546,80 +398,9 @@ router.post(
  *         schema:
  *           type: string
  *         description: 股票代码
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               price: 
- *                 type: number
- *               volume: 
- *                 type: number
- *               marketCap: 
- *                 type: number
- *               sector: 
- *                 type: string
- *               industry: 
- *                 type: string
  *     responses:
  *       200:
  *         description: 成功更新股票数据
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Stock'
- *       400:
- *         description: 参数错误
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       401:
- *         description: 未授权，需要有效的访问令牌
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: 禁止访问，需要管理员权限
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       404:
- *         description: 股票不存在
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.put(
-  '/:symbol',
-  protect,
-  authorize('admin'),
-  stockController.updateStockData
-);
-
-/**
- * @swagger
- * /api/stocks/{symbol}:
- *   delete:
- *     summary: 删除股票（仅管理员）
- *     tags: [股票]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: symbol
- *         required: true
- *         schema:
- *           type: string
- *         description: 股票代码
- *     responses:
- *       200:
- *         description: 成功删除股票
  *         content:
  *           application/json:
  *             schema:
@@ -627,87 +408,21 @@ router.put(
  *               properties:
  *                 message: 
  *                   type: string
- *       401:
- *         description: 未授权，需要有效的访问令牌
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: 禁止访问，需要管理员权限
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
+ *                 stock: 
+ *                   $ref: '#/components/schemas/Stock'
  *       404:
- *         description: 股票不存在
+ *         description: 股票未找到
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: 服务器错误
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.delete(
-  '/:symbol',
-  protect,
-  authorize('admin'),
-  stockController.deleteStock
-);
-
-/**
- * @swagger
- * /api/stocks/schedule-status:
- *   get:
- *     summary: 获取定时任务状态（仅管理员）
- *     tags: [定时任务]
- *     security:
- *       - bearerAuth: []
- *     responses:
- *       200:
- *         description: 成功获取定时任务状态
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 success: 
- *                   type: boolean
- *                   example: true
- *                 status: 
- *                   type: object
- *                   description: 定时任务状态信息
- *       401:
- *         description: 未授权访问
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *       403:
- *         description: 权限不足
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- */
-router.get(
-  '/schedule-status',
-  protect,
-  authorize('admin'),
-  async (req, res) => {
-    try {
-      const scheduleService = require('../services/schedule.service');
-      const status = scheduleService.getJobsStatus();
-      res.status(200).json({
-        success: true,
-        status
-      });
-    } catch (error) {
-      res.status(500).json({
-        success: false,
-        message: '获取定时任务状态失败',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
-      });
-    }
-  }
-);
+router.post('/:symbol/update', protect, authorize('admin'), stockController.updateStockData);
 
 module.exports = router;

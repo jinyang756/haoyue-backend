@@ -62,6 +62,7 @@ class MockDataManager {
     this.mockStocks = [
       {
         id: 'AAPL',
+        symbol: 'AAPL',
         name: 'Apple Inc.',
         industry: 'Technology',
         currentPrice: 182.48,
@@ -72,9 +73,11 @@ class MockDataManager {
         volume: 52000000,
         peRatio: 29.45,
         sector: 'Consumer Electronics',
+        exchange: 'NASDAQ',
         description: 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.',
         createdAt: new Date('2023-01-01T00:00:00Z'),
         updatedAt: new Date(),
+        isActive: true,
         // 添加技术指标
         technicalIndicators: {
           rsi: 65.2,
@@ -95,10 +98,15 @@ class MockDataManager {
           debtToEquity: 1.7,
           roe: 0.42,
           dividendYield: 0.0055
-        }
+        },
+        // 添加历史数据
+        historicalData: this.generateMockHistoricalData('AAPL', 30),
+        // 添加新闻
+        news: this.generateMockNews('AAPL', 5)
       },
       {
         id: 'MSFT',
+        symbol: 'MSFT',
         name: 'Microsoft Corporation',
         industry: 'Technology',
         currentPrice: 372.35,
@@ -109,9 +117,11 @@ class MockDataManager {
         volume: 28000000,
         peRatio: 34.8,
         sector: 'Software',
+        exchange: 'NASDAQ',
         description: 'Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide.',
         createdAt: new Date('2023-01-01T00:00:00Z'),
         updatedAt: new Date(),
+        isActive: true,
         technicalIndicators: {
           rsi: 58.7,
           macd: 1.3,
@@ -130,10 +140,13 @@ class MockDataManager {
           debtToEquity: 0.5,
           roe: 0.34,
           dividendYield: 0.0082
-        }
+        },
+        historicalData: this.generateMockHistoricalData('MSFT', 30),
+        news: this.generateMockNews('MSFT', 5)
       },
       {
         id: 'GOOGL',
+        symbol: 'GOOGL',
         name: 'Alphabet Inc.',
         industry: 'Technology',
         currentPrice: 142.58,
@@ -144,9 +157,11 @@ class MockDataManager {
         volume: 18000000,
         peRatio: 28.7,
         sector: 'Internet',
+        exchange: 'NASDAQ',
         description: 'Alphabet Inc. provides various products and services globally. It operates through Google Services, Google Cloud, and Other Bets segments.',
         createdAt: new Date('2023-01-01T00:00:00Z'),
         updatedAt: new Date(),
+        isActive: true,
         technicalIndicators: {
           rsi: 62.4,
           macd: 0.9,
@@ -165,9 +180,161 @@ class MockDataManager {
           debtToEquity: 0.1,
           roe: 0.18,
           dividendYield: 0
-        }
+        },
+        historicalData: this.generateMockHistoricalData('GOOGL', 30),
+        news: this.generateMockNews('GOOGL', 5)
+      },
+      {
+        id: 'AMZN',
+        symbol: 'AMZN',
+        name: 'Amazon.com Inc.',
+        industry: 'E-commerce',
+        currentPrice: 135.79,
+        previousClose: 134.25,
+        change: 1.54,
+        changePercent: 1.15,
+        marketCap: 1780000000000,
+        volume: 35000000,
+        peRatio: 45.2,
+        sector: 'Internet Retail',
+        exchange: 'NASDAQ',
+        description: 'Amazon.com, Inc. engages in the provision of online retail shopping services.',
+        createdAt: new Date('2023-01-01T00:00:00Z'),
+        updatedAt: new Date(),
+        isActive: true,
+        technicalIndicators: {
+          rsi: 55.3,
+          macd: 1.8,
+          sma20: 132.4,
+          sma50: 128.7,
+          sma200: 122.3,
+          bollingerUpper: 139.2,
+          bollingerLower: 129.8,
+          volumeAvg: 32000000,
+          atr: 3.1
+        },
+        fundamentalIndicators: {
+          eps: 3.00,
+          revenue: 514000000000,
+          profitMargin: 0.05,
+          debtToEquity: 0.8,
+          roe: 0.15,
+          dividendYield: 0
+        },
+        historicalData: this.generateMockHistoricalData('AMZN', 30),
+        news: this.generateMockNews('AMZN', 5)
+      },
+      {
+        id: 'TSLA',
+        symbol: 'TSLA',
+        name: 'Tesla, Inc.',
+        industry: 'Automotive',
+        currentPrice: 248.32,
+        previousClose: 245.18,
+        change: 3.14,
+        changePercent: 1.28,
+        marketCap: 790000000000,
+        volume: 85000000,
+        peRatio: 62.8,
+        sector: 'Auto Manufacturers',
+        exchange: 'NASDAQ',
+        description: 'Tesla, Inc. designs, develops, manufactures, leases, and sells electric vehicles, energy generation and storage systems.',
+        createdAt: new Date('2023-01-01T00:00:00Z'),
+        updatedAt: new Date(),
+        isActive: true,
+        technicalIndicators: {
+          rsi: 68.9,
+          macd: 4.2,
+          sma20: 242.1,
+          sma50: 235.6,
+          sma200: 218.4,
+          bollingerUpper: 254.7,
+          bollingerLower: 239.8,
+          volumeAvg: 78000000,
+          atr: 6.3
+        },
+        fundamentalIndicators: {
+          eps: 3.95,
+          revenue: 96800000000,
+          profitMargin: 0.18,
+          debtToEquity: 0.2,
+          roe: 0.28,
+          dividendYield: 0
+        },
+        historicalData: this.generateMockHistoricalData('TSLA', 30),
+        news: this.generateMockNews('TSLA', 5)
       }
     ];
+  }
+
+  // 生成模拟历史数据
+  generateMockHistoricalData(symbol, days) {
+    const data = [];
+    const basePrice = this.mockStocks.find(s => s.symbol === symbol)?.currentPrice || 100;
+    
+    for (let i = days - 1; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      
+      // 生成随机价格波动
+      const volatility = 0.02; // 2%波动
+      const changePercent = (Math.random() - 0.5) * 2 * volatility;
+      const close = basePrice * (1 + changePercent * (days - i) / days);
+      const open = close * (1 + (Math.random() - 0.5) * 0.01);
+      const high = Math.max(open, close) * (1 + Math.random() * 0.01);
+      const low = Math.min(open, close) * (1 - Math.random() * 0.01);
+      const volume = Math.floor(Math.random() * 50000000) + 10000000;
+      
+      data.push({
+        date: date,
+        open: parseFloat(open.toFixed(2)),
+        high: parseFloat(high.toFixed(2)),
+        low: parseFloat(low.toFixed(2)),
+        close: parseFloat(close.toFixed(2)),
+        volume: volume
+      });
+    }
+    
+    return data;
+  }
+
+  // 生成模拟新闻
+  generateMockNews(symbol, count) {
+    const news = [];
+    const companies = {
+      'AAPL': 'Apple',
+      'MSFT': 'Microsoft',
+      'GOOGL': 'Google',
+      'AMZN': 'Amazon',
+      'TSLA': 'Tesla'
+    };
+    
+    const topics = [
+      '财报业绩超出预期',
+      '新产品发布引发市场关注',
+      '技术创新获得行业认可',
+      '战略合作拓展市场份额',
+      '管理层变动影响公司发展',
+      '监管政策变化带来新机遇',
+      '市场分析机构上调评级',
+      '投资者关系活动增强信心'
+    ];
+    
+    for (let i = 0; i < count; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - Math.floor(Math.random() * 30));
+      
+      news.push({
+        title: `${companies[symbol] || symbol}${topics[Math.floor(Math.random() * topics.length)]}`,
+        source: ['财经新闻', '华尔街日报', '彭博社', '路透社', '金融时报'][Math.floor(Math.random() * 5)],
+        publishedAt: date,
+        url: `https://example.com/news/${symbol.toLowerCase()}-${Date.now()}-${i}`,
+        summary: `这是关于${companies[symbol] || symbol}的模拟新闻摘要。该新闻报道了公司最新的发展动态和市场表现。`,
+        sentiment: ['positive', 'neutral', 'negative'][Math.floor(Math.random() * 3)]
+      });
+    }
+    
+    return news;
   }
 
   // 初始化模拟分析数据
@@ -203,13 +370,13 @@ class MockDataManager {
           confidenceLevel: 0.75
         },
         factors: [
-          { name: 'Trend Strength', value: 82 },
-          { name: 'Momentum', value: 75 },
-          { name: 'Volume Analysis', value: 76 }
+          { name: 'Price Trend', value: 82 },
+          { name: 'Volume Analysis', value: 75 },
+          { name: 'Support Resistance', value: 77 }
         ],
-        analysisDate: new Date('2023-08-14T14:20:00Z'),
-        createdAt: new Date('2023-08-14T14:20:00Z'),
-        updatedAt: new Date('2023-08-14T14:20:00Z')
+        analysisDate: new Date('2023-08-16T14:45:00Z'),
+        createdAt: new Date('2023-08-16T14:45:00Z'),
+        updatedAt: new Date('2023-08-16T14:45:00Z')
       }
     ];
   }
@@ -220,22 +387,14 @@ class MockDataManager {
       {
         id: '1',
         userId: '1',
-        stocks: ['AAPL', 'MSFT', 'GOOGL'],
-        reason: 'Strong fundamentals and growth potential in tech sector',
-        riskLevel: 'Medium',
-        recommendedDate: new Date('2023-08-16T09:00:00Z'),
-        createdAt: new Date('2023-08-16T09:00:00Z'),
-        updatedAt: new Date('2023-08-16T09:00:00Z')
-      },
-      {
-        id: '2',
-        userId: '2',
-        stocks: ['AAPL'],
-        reason: 'Technical indicators showing bullish trend',
-        riskLevel: 'Low',
-        recommendedDate: new Date('2023-08-15T16:30:00Z'),
-        createdAt: new Date('2023-08-15T16:30:00Z'),
-        updatedAt: new Date('2023-08-15T16:30:00Z')
+        type: 'portfolio',
+        stocks: [
+          { symbol: 'AAPL', weight: 30, reason: '技术创新领先' },
+          { symbol: 'MSFT', weight: 40, reason: '云计算增长强劲' },
+          { symbol: 'GOOGL', weight: 30, reason: '广告业务稳定' }
+        ],
+        createdAt: new Date('2023-08-01T09:00:00Z'),
+        updatedAt: new Date('2023-08-01T09:00:00Z')
       }
     ];
   }
@@ -245,173 +404,146 @@ class MockDataManager {
     this.mockNews = [
       {
         id: '1',
-        stockId: 'AAPL',
-        title: 'Apple Announces New iPhone 15 Series',
-        source: 'TechCrunch',
-        url: 'https://techcrunch.com/apple-announces-new-iphone-15-series/',
-        publishDate: new Date('2023-09-12T09:00:00Z'),
-        sentiment: 'Positive',
-        createdAt: new Date('2023-09-12T09:00:00Z'),
-        updatedAt: new Date('2023-09-12T09:00:00Z')
-      },
-      {
-        id: '2',
-        stockId: 'MSFT',
-        title: 'Microsoft Reports Strong Quarterly Earnings',
-        source: 'CNBC',
-        url: 'https://cnbc.com/microsoft-reports-strong-quarterly-earnings/',
-        publishDate: new Date('2023-09-11T14:30:00Z'),
-        sentiment: 'Positive',
-        createdAt: new Date('2023-09-11T14:30:00Z'),
-        updatedAt: new Date('2023-09-11T14:30:00Z')
+        title: '科技股财报季来临，市场关注AI发展',
+        content: '随着科技公司财报季的到来，投资者密切关注人工智能技术的发展对公司业绩的影响。',
+        source: '财经新闻',
+        publishedAt: new Date('2023-08-10T08:00:00Z'),
+        tags: ['科技股', '财报', 'AI']
       }
     ];
   }
 
-  // 获取用户数据
-  getUsers() {
-    return [...this.mockUsers];
+  // 获取所有模拟股票
+  getAllMockStocks() {
+    return this.mockStocks;
   }
 
-  // 通过ID获取用户
-  getUserById(id) {
+  // 根据股票代码获取模拟股票
+  getMockStock(symbol) {
+    const stock = this.mockStocks.find(s => s.symbol === symbol.toUpperCase());
+    if (!stock) {
+      // 如果找不到，创建一个新的模拟股票
+      return this.createMockStock(symbol);
+    }
+    return stock;
+  }
+
+  // 创建新的模拟股票
+  createMockStock(symbol) {
+    const newStock = {
+      id: symbol,
+      symbol: symbol.toUpperCase(),
+      name: `${symbol.toUpperCase()} Company`,
+      industry: 'Technology',
+      currentPrice: parseFloat((Math.random() * 200 + 50).toFixed(2)),
+      previousClose: parseFloat((Math.random() * 200 + 50).toFixed(2)),
+      change: parseFloat((Math.random() * 10 - 5).toFixed(2)),
+      changePercent: parseFloat((Math.random() * 10 - 5).toFixed(2)),
+      marketCap: Math.floor(Math.random() * 1000000000000) + 100000000000,
+      volume: Math.floor(Math.random() * 50000000) + 1000000,
+      peRatio: parseFloat((Math.random() * 50 + 10).toFixed(2)),
+      sector: 'Technology',
+      exchange: 'NASDAQ',
+      description: `This is a mock stock for ${symbol.toUpperCase()}.`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true,
+      technicalIndicators: {
+        rsi: parseFloat((Math.random() * 100).toFixed(2)),
+        macd: parseFloat((Math.random() * 10 - 5).toFixed(2)),
+        sma20: parseFloat((Math.random() * 200 + 50).toFixed(2)),
+        sma50: parseFloat((Math.random() * 200 + 50).toFixed(2)),
+        sma200: parseFloat((Math.random() * 200 + 50).toFixed(2))
+      },
+      fundamentalIndicators: {
+        eps: parseFloat((Math.random() * 10).toFixed(2)),
+        revenue: Math.floor(Math.random() * 100000000000) + 10000000000,
+        profitMargin: parseFloat((Math.random() * 0.3).toFixed(2)),
+        debtToEquity: parseFloat((Math.random() * 2).toFixed(2)),
+        roe: parseFloat((Math.random() * 0.3).toFixed(2)),
+        dividendYield: parseFloat((Math.random() * 0.05).toFixed(2))
+      },
+      historicalData: this.generateMockHistoricalData(symbol, 30),
+      news: this.generateMockNews(symbol, 5)
+    };
+    
+    this.mockStocks.push(newStock);
+    return newStock;
+  }
+
+  // 搜索模拟股票
+  searchMockStocks(query) {
+    return this.mockStocks.filter(stock => 
+      stock.symbol.toLowerCase().includes(query.toLowerCase()) ||
+      stock.name.toLowerCase().includes(query.toLowerCase())
+    );
+  }
+
+  // 获取模拟历史数据
+  getMockHistoricalData(symbol, interval) {
+    const stock = this.mockStocks.find(s => s.symbol === symbol.toUpperCase());
+    if (stock && stock.historicalData) {
+      return stock.historicalData;
+    }
+    return this.generateMockHistoricalData(symbol, 30);
+  }
+
+  // 获取模拟新闻
+  getMockNews(symbol) {
+    const stock = this.mockStocks.find(s => s.symbol === symbol.toUpperCase());
+    if (stock && stock.news) {
+      return stock.news;
+    }
+    return this.generateMockNews(symbol, 5);
+  }
+
+  // 获取所有模拟用户
+  getAllMockUsers() {
+    return this.mockUsers;
+  }
+
+  // 根据ID获取模拟用户
+  getMockUserById(id) {
     return this.mockUsers.find(user => user.id === id);
   }
 
-  // 获取股票数据
-  getStocks() {
-    return [...this.mockStocks];
+  // 根据邮箱获取模拟用户
+  getMockUserByEmail(email) {
+    return this.mockUsers.find(user => user.email === email);
   }
 
-  // 通过ID获取股票
-  getStockById(id) {
-    return this.mockStocks.find(stock => stock.id === id);
+  // 获取所有模拟分析
+  getAllMockAnalyses() {
+    return this.mockAnalyses;
   }
 
-  // 获取分析数据
-  getAnalyses() {
-    return [...this.mockAnalyses];
+  // 根据ID获取模拟分析
+  getMockAnalysisById(id) {
+    return this.mockAnalyses.find(analysis => analysis.id === id);
   }
 
-  // 获取推荐数据
-  getRecommendations() {
-    return [...this.mockRecommendations];
+  // 获取所有模拟推荐
+  getAllMockRecommendations() {
+    return this.mockRecommendations;
   }
 
-  // 获取新闻数据
-  getNews() {
-    return [...this.mockNews];
+  // 根据ID获取模拟推荐
+  getMockRecommendationById(id) {
+    return this.mockRecommendations.find(recommendation => recommendation.id === id);
   }
 
-  // 根据股票ID获取新闻
-  getNewsByStockId(stockId) {
-    return this.mockNews.filter(news => news.stockId === stockId);
+  // 获取所有模拟新闻
+  getAllMockNews() {
+    return this.mockNews;
   }
 
-  // 验证用户密码（模拟实现）
-  mockMatchPassword(username, password) {
-    try {
-      // 注意：这只是模拟环境的简化实现，生产环境应使用bcrypt等安全库
-      const user = this.mockUsers.find(u => u.username === username);
-      if (!user) {
-        logger.warn(`用户 ${username} 不存在`);
-        return false;
-      }
-      
-      // 模拟密码验证（使用MD5哈希进行比较，实际生产环境应使用bcrypt等更安全的方式）
-      const passwordHash = this._mockHashPassword(password);
-      const match = passwordHash === user.passwordHash;
-      
-      if (match) {
-        logger.info(`用户 ${username} 登录验证成功`);
-      } else {
-        logger.warn(`用户 ${username} 密码验证失败`);
-      }
-      
-      return match;
-    } catch (error) {
-      logger.error('密码验证过程中出错:', error.message);
-      return false;
-    }
-  }
-  
-  // 模拟哈希密码的辅助方法
-  _mockHashPassword(password) {
-    try {
-      // 注意：这只是模拟环境的简化实现，生产环境应使用bcrypt等安全库
-      const hash = crypto.createHash('md5').update(password).digest('hex');
-      return hash;
-    } catch (error) {
-      logger.error('密码哈希过程中出错:', error.message);
-      // 在哈希过程失败时返回一个随机哈希以确保安全
-      return crypto.randomBytes(16).toString('hex');
-    }
-  }
-
-  // 添加新的分析记录
-  addMockAnalysis(analysis) {
-    const newAnalysis = {
-      id: `${Date.now()}`,
-      ...analysis,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    };
-    this.mockAnalyses.push(newAnalysis);
-    return newAnalysis;
-  }
-
-  // 清除所有模拟数据
-  clearAllMockData() {
-    try {
-      logger.info('正在清除所有模拟数据...');
-      this.mockUsers = [];
-      this.mockStocks = [];
-      this.mockAnalyses = [];
-      this.mockRecommendations = [];
-      this.mockNews = [];
-      logger.info('模拟数据已清除');
-      return true;
-    } catch (error) {
-      logger.error('清除模拟数据时出错:', error.message);
-      return false;
-    }
-  }
-
-  // 重新加载模拟数据
-  reloadMockData() {
-    try {
-      logger.info('正在重新加载模拟数据...');
-      this.clearAllMockData();
-      this.initializeMockData();
-      logger.info('模拟数据已重新加载');
-      return true;
-    } catch (error) {
-      logger.error('重新加载模拟数据时出错:', error.message);
-      return false;
-    }
-  }
-
-  // 获取数据统计信息
-  getDataStats() {
-    return {
-      users: this.mockUsers.length,
-      stocks: this.mockStocks.length,
-      analyses: this.mockAnalyses.length,
-      recommendations: this.mockRecommendations.length,
-      news: this.mockNews.length,
-      lastUpdated: new Date().toISOString()
-    };
+  // 根据ID获取模拟新闻
+  getMockNewsById(id) {
+    return this.mockNews.find(news => news.id === id);
   }
 }
 
-// 创建单例实例
-const mockDataManager = new MockDataManager();
-
-// 导出模拟数据管理实例
-module.exports = mockDataManager;
-
-// 导出MockDataManager类（用于测试或扩展）
-module.exports.MockDataManager = MockDataManager;
-
-// 导出模拟密码匹配函数供外部使用
-module.exports.mockMatchPassword = mockDataManager.mockMatchPassword.bind(mockDataManager);
+// 导出单例实例
+module.exports = {
+  mockDataManager: new MockDataManager()
+};

@@ -133,8 +133,28 @@ const analysisRoutes = require('./routes/analysis.routes');
 const recommendationRoutes = require('./routes/recommendation.routes');
 const newsRoutes = require('./routes/news.routes');
 
-// 配置Swagger文档路由（只在非Vercel环境中启用）
-if (process.env.VERCEL !== '1') {
+// 配置Swagger文档路由（在Vercel环境中也启用，但使用特殊处理）
+if (process.env.NODE_ENV !== 'production' || process.env.VERCEL === '1') {
+  // 在Vercel环境中，我们仍然提供Swagger文档，但使用特殊配置
+  app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
+    explorer: true,
+    swaggerOptions: {
+      persistAuthorization: true,
+      // 在Vercel环境中，我们使用相对路径
+      url: process.env.VERCEL === '1' ? '/api/docs/swagger.json' : undefined
+    }
+  }));
+  logger.info(`Swagger文档已启用: /api/docs`);
+  
+  // 在Vercel环境中提供Swagger JSON文件
+  if (process.env.VERCEL === '1') {
+    app.get('/api/docs/swagger.json', (req, res) => {
+      res.setHeader('Content-Type', 'application/json');
+      res.send(swaggerSpecs);
+    });
+  }
+} else {
+  // 在生产环境中（非Vercel），仍然提供Swagger文档
   app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs, {
     explorer: true,
     swaggerOptions: {
@@ -170,7 +190,8 @@ app.get('/health', (req, res) => {
       stocks: '/api/stocks',
       analysis: '/api/analysis',
       recommendations: '/api/recommendations',
-      news: '/api/news'
+      news: '/api/news',
+      docs: '/api/docs'
     }
   };
 
@@ -209,169 +230,84 @@ app.use('/api/analysis', (req, res, next) => {
 });
 
 app.use('/api/recommendations', (req, res, next) => {
-  logPerformance('Recommendations路由', () => recommendationRoutes(req, res, next)).catch(next);
+  logPerformance('Recommendation路由', () => recommendationRoutes(req, res, next)).catch(next);
 });
 
 app.use('/api/news', (req, res, next) => {
   logPerformance('News路由', () => newsRoutes(req, res, next)).catch(next);
 });
 
-// 首页路由 - 增强版本
+// 根目录路由
 app.get('/', (req, res) => {
   res.json({
-    message: '欢迎使用皓月量化智能引擎API',
+    message: '欢迎使用皓月量化智能引擎API服务',
     version: process.env.APP_VERSION || '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-    vercel: process.env.VERCEL === '1' ? 'true' : 'false',
-    documentation: process.env.VERCEL === '1' ? 'Swagger文档在Vercel环境中不可用' : '/api/docs',
-    healthCheck: '/health',
-    endpoints: {
-      auth: '/api/auth',
-      users: '/api/users',
-      stocks: '/api/stocks',
-      analysis: '/api/analysis',
-      recommendations: '/api/recommendations',
-      news: '/api/news'
-    }
+    documentation: '/api/docs',
+    health: '/health'
   });
 });
 
-// 自定义API错误处理中间件
-app.use((err, req, res, next) => {
-  // 记录错误到日志
-  errorLogger(err, req, res);
-  
-  // 标准化错误响应格式
-  const errorResponse = {
-    status: 'error',
-    message: err.message || '服务器内部错误',
-    error: process.env.NODE_ENV === 'development' ? {
-      name: err.name,
-      stack: err.stack,
-      details: err.details
-    } : undefined,
-    path: req.path,
-    timestamp: new Date().toISOString()
-  };
-  
-  // 根据错误类型设置合适的状态码
-  let statusCode = 500;
-  if (err.name === 'ValidationError') statusCode = 400;
-  if (err.name === 'UnauthorizedError') statusCode = 401;
-  if (err.name === 'ForbiddenError') statusCode = 403;
-  if (err.name === 'NotFoundError') statusCode = 404;
-  if (err.name === 'ConflictError') statusCode = 409;
-  if (err.name === 'RateLimitError') statusCode = 429;
-  
-  res.status(statusCode).json(errorResponse);
-});
-
-// 404处理 - 增强版本
-app.use((req, res) => {
-  // 记录404错误
-  logger.warn(`404 Not Found - ${req.method} ${req.path}`);
-  
+// 404处理
+app.use('*', (req, res) => {
   res.status(404).json({
-    status: 'error',
+    success: false,
     message: '请求的资源不存在',
-    path: req.path,
-    method: req.method,
-    availablePaths: {
-      docs: process.env.VERCEL === '1' ? 'Swagger文档在Vercel环境中不可用' : '/api/docs',
-      health: '/health',
-      root: '/'
-    }
+    path: req.originalUrl
   });
 });
 
-// Vercel会自动处理HTTP请求，通过module.exports导出app
-module.exports = app;
+// 全局错误处理中间件
+app.use((error, req, res, next) => {
+  // 记录错误日志
+  errorLogger(error, req, res);
+  
+  // 确定状态码
+  const statusCode = error.statusCode || 500;
+  
+  // 发送错误响应
+  res.status(statusCode).json({
+    success: false,
+    message: error.message || '服务器内部错误',
+    ...(process.env.NODE_ENV === 'development' && {
+      stack: error.stack,
+      error: error
+    })
+  });
+});
 
 // 只在非Vercel环境中启动服务器
 if (process.env.VERCEL !== '1') {
-  const server = app.listen(PORT, () => {
-    const startupMessage = {
-      service: '皓月量化智能引擎API服务',
-      port: PORT,
-      environment: process.env.NODE_ENV || 'development',
-      apiUrl: `http://localhost:${PORT}/api`,
-      swaggerDocs: `http://localhost:${PORT}/api/docs`,
-      healthCheck: `http://localhost:${PORT}/health`
-    };
-    
-    logger.info('服务器启动成功', startupMessage);
-    
-    // 在非生产环境中，打印到控制台以便开发调试
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('\x1b[32m%s\x1b[0m', `✅ 服务器启动成功: http://localhost:${PORT}`);
-      console.log('\x1b[36m%s\x1b[0m', `📚 Swagger文档: http://localhost:${PORT}/api/docs`);
-      console.log('\x1b[36m%s\x1b[0m', `🏥 健康检查: http://localhost:${PORT}/health`);
-      console.log('\x1b[33m%s\x1b[0m', `🌍 环境: ${process.env.NODE_ENV || 'development'}`);
-    }
-  });
-
-  // 设置服务器超时时间（2分钟）
-  server.timeout = 120000;
-
-  // 优雅关闭处理 - 增强版本
-  const shutdown = async () => {
-    logger.info('开始优雅关闭服务器...');
-    
+  // 优雅关闭处理
+  process.on('SIGTERM', async () => {
+    logger.info('收到SIGTERM信号，正在优雅关闭...');
     try {
-      // 关闭HTTP服务器，不再接受新请求
-      if (server && typeof server.close === 'function') {
-        await new Promise((resolve, reject) => {
-          server.close((err) => {
-            if (err) {
-              logger.error('HTTP服务器关闭出错:', err);
-              reject(err);
-            } else {
-              logger.info('HTTP服务器已成功关闭');
-              resolve();
-            }
-          });
-        });
-      }
-      
-      // 关闭数据库连接
-      if (typeof closeDB === 'function') {
-        await closeDB();
-        logger.info('数据库连接已关闭');
-      }
-      
-      // 清理其他资源
-      logger.info('所有资源已成功释放');
+      await closeDB();
       process.exit(0);
     } catch (error) {
-      logger.error('优雅关闭过程中发生错误:', error);
+      logger.error('关闭过程中发生错误:', error);
       process.exit(1);
     }
-  };
-
-  // 捕获各种终止信号
-  process.on('SIGINT', () => {
-    logger.info('接收到SIGINT信号（Ctrl+C），开始关闭服务器...');
-    shutdown();
   });
 
-  process.on('SIGTERM', () => {
-    logger.info('接收到SIGTERM信号，开始关闭服务器...');
-    shutdown();
-  });
-
-  process.on('uncaughtException', (err) => {
-    logger.error('未捕获的异常:', err);
-    // 在非生产环境中保持进程运行以便调试
-    if (process.env.NODE_ENV !== 'production') {
-      logger.warn('在开发环境中，进程将继续运行以方便调试');
-    } else {
-      // 在生产环境中，尝试优雅关闭
-      shutdown();
+  process.on('SIGINT', async () => {
+    logger.info('收到SIGINT信号，正在优雅关闭...');
+    try {
+      await closeDB();
+      process.exit(0);
+    } catch (error) {
+      logger.error('关闭过程中发生错误:', error);
+      process.exit(1);
     }
   });
 
-  process.on('unhandledRejection', (reason, promise) => {
-    logger.error('未处理的Promise拒绝:', { reason, promise });
-    // 不像未捕获的异常那样严重，通常不需要立即关闭服务器
+  // 启动服务器
+  app.listen(PORT, () => {
+    logger.info(`皓月量化智能引擎API服务启动成功`);
+    logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`端口: ${PORT}`);
+    logger.info(`文档: http://localhost:${PORT}/api/docs`);
   });
 }
+
+// 导出应用供Vercel使用
+module.exports = app;

@@ -15,7 +15,8 @@
     "generate-data": "node scripts/generate-stock-data.js",
     "init-data": "node scripts/init-stock-data.js",
     "init-china-data": "node scripts/init-china-stock-data.js",
-    "test-db": "node scripts/test-mongodb-connection.js"
+    "test-db": "node scripts/test-mongodb-connection.js",
+    "test-swagger-vercel": "node scripts/test-swagger-vercel.js"
   },
   "keywords": [
     "stock",
