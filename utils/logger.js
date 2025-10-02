@@ -1,14 +1,9 @@
-const winston = require('winston');
 const path = require('path');
 const fs = require('fs');
+const winston = require('winston');
 
 // 创建日志目录
 const logDir = path.join(__dirname, '../logs');
-
-// 确保日志目录存在
-if (!fs.existsSync(logDir)) {
-  fs.mkdirSync(logDir, { recursive: true });
-}
 
 // 定义日志级别顺序
 const logLevels = {
@@ -54,17 +49,40 @@ const getLogLevel = () => {
   return level;
 };
 
-// 创建日志器
-const logger = winston.createLogger({
+// 检查是否在无服务器环境（如Vercel）中运行
+const isServerless = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+// 确保日志目录存在 - 只在非无服务器环境中尝试创建
+let canWriteFiles = false;
+if (!isServerless) {
+  try {
+    if (!fs.existsSync(logDir)) {
+      fs.mkdirSync(logDir, { recursive: true });
+    }
+    canWriteFiles = true;
+  } catch (error) {
+    console.warn('无法创建日志目录，将只使用控制台日志:', error.message);
+  }
+}
+
+// 创建日志器配置
+const loggerConfig = {
   levels: logLevels,
   level: getLogLevel(),
-  format: fileLogFormat,
+  format: isServerless ? consoleLogFormat : fileLogFormat,
   defaultMeta: {
     service: 'haoyue-api',
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development'
   },
-  transports: [
+  transports: [],
+  exceptionHandlers: [],
+  rejectionHandlers: []
+};
+
+// 只在能够写入文件的环境中添加文件日志传输
+if (canWriteFiles) {
+  loggerConfig.transports = [
     // 错误日志文件 - 只记录错误级别的日志
     new winston.transports.File({
       filename: path.join(logDir, 'error.log'),
@@ -93,27 +111,33 @@ const logger = winston.createLogger({
       tailable: true,
       zippedArchive: true
     })
-  ],
-  // 处理未捕获的异常
-  exceptionHandlers: [
+  ];
+  
+  // 添加异常处理器
+  loggerConfig.exceptionHandlers = [
     new winston.transports.File({
       filename: path.join(logDir, 'exceptions.log'),
       maxsize: 5242880,
       maxFiles: 5
     })
-  ],
-  // 处理未处理的Promise拒绝
-  rejectionHandlers: [
+  ];
+  
+  // 添加拒绝处理器
+  loggerConfig.rejectionHandlers = [
     new winston.transports.File({
       filename: path.join(logDir, 'rejections.log'),
       maxsize: 5242880,
       maxFiles: 5
     })
-  ]
-});
+  ];
+}
 
-// 在开发环境或调试模式下添加控制台输出
-const shouldUseConsole = process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true';
+// 创建日志器
+const logger = winston.createLogger(loggerConfig);
+
+// 始终在无服务器环境中使用控制台日志
+// 在开发环境或调试模式下也使用控制台日志
+const shouldUseConsole = isServerless || process.env.NODE_ENV !== 'production' || process.env.DEBUG === 'true';
 
 if (shouldUseConsole) {
   logger.add(new winston.transports.Console({
@@ -121,6 +145,11 @@ if (shouldUseConsole) {
     // 在开发环境下可以显示所有级别的日志，在调试模式下可以显示更详细的日志
     level: process.env.DEBUG === 'true' ? 'debug' : getLogLevel()
   }));
+}
+
+// 在无服务器环境中，添加额外的控制台信息
+if (isServerless) {
+  console.log('正在无服务器环境中运行，将只使用控制台日志');
 }
 
 /**

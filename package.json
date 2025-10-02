@@ -7,7 +7,9 @@
     "dev": "nodemon index.js",
     "test": "jest",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "schedule": "node schedule-init.js",
+    "schedule-dev": "nodemon schedule-init.js"
   },
   "keywords": [
     "stock",

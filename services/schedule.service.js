@@ -1,104 +1,121 @@
 const schedule = require('node-schedule');
-const { logger } = require('../utils/logger');
-const { Stock } = require('../models/Stock');
-const { Analysis } = require('../models/Analysis');
-const { mockDataManager } = require('../utils/mockDataManager');
+const logger = require('../utils/logger');
+const mockDataManager = require('../utils/mockDataManager');
+const Stock = require('../models/Stock');
+const Analysis = require('../models/Analysis');
 const aiService = require('./ai.service');
+const chinaStockCrawler = require('./chinaStockCrawler.service');
 
-// 定时任务服务
 class ScheduleService {
   constructor() {
-    // 存储所有的定时任务
     this.jobs = new Map();
-    // 任务锁，用于防止任务重叠执行
     this.jobLocks = new Map();
-    // 上次维护报告
     this.lastMaintenanceReport = null;
-    // 初始化定时任务
-    this.initializeJobs();
   }
 
   // 初始化所有定时任务
-  initializeJobs() {
+  initJobs() {
     try {
-      logger.info('开始初始化定时任务...');
-      
+      logger.info('开始初始化所有定时任务...');
+
       // 每小时更新一次股票价格
-      this.scheduleJob('updateStockPrices', '0 * * * *', this.updateAllStockPrices.bind(this));
-      
+      this.jobs.set(
+        'updateStockPrices',
+        schedule.scheduleJob('0 * * * *', this.wrapJob('updateStockPrices', this.updateAllStockPrices.bind(this)))
+      );
+      logger.info('✓ 已创建任务: updateStockPrices (每小时0分)');
+
       // 每天凌晨2点更新历史数据
-      this.scheduleJob('updateHistoricalData', '0 2 * * *', this.updateHistoricalData.bind(this));
-      
-      // 每周日晚上10点执行系统维护
-      this.scheduleJob('performMaintenance', '0 22 * * 0', this.performMaintenance.bind(this));
-      
-      // 每30分钟执行一次AI分析任务
-      this.scheduleJob('performAIAnalysis', '*/30 * * * *', this.performScheduledAIAnalysis.bind(this));
-      
-      // 每天中午12点生成报告
-      this.scheduleJob('generateDailyReport', '0 12 * * *', this.generateDailyReport.bind(this));
-      
+      this.jobs.set(
+        'updateHistoricalData',
+        schedule.scheduleJob('0 2 * * *', this.wrapJob('updateHistoricalData', this.updateHistoricalData.bind(this)))
+      );
+      logger.info('✓ 已创建任务: updateHistoricalData (每天凌晨2点)');
+
+      // 每周晚上10点执行系统维护
+      this.jobs.set(
+        'performMaintenance',
+        schedule.scheduleJob('0 22 * * 0', this.wrapJob('performMaintenance', this.performMaintenance.bind(this)))
+      );
+      logger.info('✓ 已创建任务: performMaintenance (每周 evenings10点)');
+
+      // 每周一至周五收盘后执行AI分析
+      this.jobs.set(
+        'performAIAnalysis',
+        schedule.scheduleJob('0 16 * * 1-5', this.wrapJob('performAIAnalysis', this.performScheduledAIAnalysis.bind(this)))
+      );
+      logger.info('✓ 已创建任务: performAIAnalysis (每周一至周五16点)');
+
+      // 每天早上8点生成每日报告
+      this.jobs.set(
+        'generateDailyReport',
+        schedule.scheduleJob('0 8 * * *', this.wrapJob('generateDailyReport', this.generateDailyReport.bind(this)))
+      );
+      logger.info('✓ 已创建任务: generateDailyReport (每天早上8点)');
+
+      // 每天上午9:30和下午14:30爬取A股数据（A股交易时间前后）
+      this.jobs.set(
+        'crawlChinaStockData',
+        schedule.scheduleJob('30 9,14 * * 1-5', this.wrapJob('crawlChinaStockData', this.crawlChinaStockData.bind(this)))
+      );
+      logger.info('✓ 已创建任务: crawlChinaStockData (每周一至周五9:30和14:30)');
+
       logger.info(`✓ 成功初始化 ${this.jobs.size} 个定时任务`);
+      return true;
     } catch (error) {
       logger.error('初始化定时任务失败:', error.message);
-      logger.error('错误堆栈:', error.stack);
+      return false;
     }
   }
 
-  // 安排一个新的定时任务
-  scheduleJob(jobId, cronExpression, jobFunction) {
-    try {
-      if (this.jobs.has(jobId)) {
-        logger.warn(`任务 ${jobId} 已经存在，将被替换`);
-        this.cancelJob(jobId);
-      }
-      
-      const job = schedule.scheduleJob(cronExpression, async () => {
-        // 使用任务锁防止重叠执行
-        if (this.acquireJobLock(jobId)) {
-          try {
-            logger.info(`开始执行任务: ${jobId}`);
-            const startTime = Date.now();
-            
-            // 执行任务函数
-            await jobFunction();
-            
-            const executionTime = (Date.now() - startTime) / 1000;
-            logger.info(`任务 ${jobId} 执行完成，耗时: ${executionTime.toFixed(2)} 秒`);
-          } catch (error) {
-            logger.error(`任务 ${jobId} 执行失败:`, error.message);
-            logger.error('错误堆栈:', error.stack);
-          } finally {
-            // 释放任务锁
-            this.releaseJobLock(jobId);
-          }
-        } else {
-          logger.warn(`任务 ${jobId} 已在执行中，跳过本次调度`);
+  // 包装任务函数，添加任务锁机制
+  wrapJob(jobId, jobFunction) {
+    return async () => {
+      try {
+        // 如果任务已经在运行，则跳过
+        if (!this.acquireJobLock(jobId)) {
+          logger.warn(`任务 ${jobId} 已在运行，本次执行被跳过`);
+          return;
         }
-      });
-      
-      this.jobs.set(jobId, job);
-      logger.info(`✓ 成功安排任务: ${jobId} (${cronExpression})`);
-      return job;
-    } catch (error) {
-      logger.error(`安排任务 ${jobId} 失败:`, error.message);
-      return null;
-    }
+
+        logger.info(`任务 ${jobId} 开始执行`);
+        const startTime = new Date();
+
+        // 执行任务
+        const result = await jobFunction();
+
+        const endTime = new Date();
+        const duration = (endTime - startTime) / 1000;
+        logger.info(`任务 ${jobId} 执行完成，耗时: ${duration.toFixed(2)} 秒`);
+
+        // 释放任务锁
+        this.releaseJobLock(jobId);
+
+        return result;
+      } catch (error) {
+        logger.error(`任务 ${jobId} 执行出错:`, error.message);
+        // 确保任务锁被释放
+        this.releaseJobLock(jobId);
+        return { success: false, error: error.message };
+      }
+    };
   }
 
   // 取消指定的定时任务
   cancelJob(jobId) {
     try {
-      const job = this.jobs.get(jobId);
-      if (job) {
-        job.cancel();
-        this.jobs.delete(jobId);
-        this.releaseJobLock(jobId);
-        logger.info(`✓ 成功取消任务: ${jobId}`);
-        return true;
+      if (!this.jobs.has(jobId)) {
+        logger.warn(`任务 ${jobId} 不存在`);
+        return false;
       }
-      logger.warn(`任务 ${jobId} 不存在，无法取消`);
-      return false;
+
+      const job = this.jobs.get(jobId);
+      job.cancel();
+      this.jobs.delete(jobId);
+      this.jobLocks.delete(jobId);
+
+      logger.info(`✓ 任务 ${jobId} 已取消`);
+      return true;
     } catch (error) {
       logger.error(`取消任务 ${jobId} 失败:`, error.message);
       return false;
@@ -152,7 +169,8 @@ class ScheduleService {
         updateHistoricalData: this.updateHistoricalData.bind(this),
         performMaintenance: this.performMaintenance.bind(this),
         performAIAnalysis: this.performScheduledAIAnalysis.bind(this),
-        generateDailyReport: this.generateDailyReport.bind(this)
+        generateDailyReport: this.generateDailyReport.bind(this),
+        crawlChinaStockData: this.crawlChinaStockData.bind(this)
       };
       
       if (jobFunctions[jobId]) {
@@ -616,6 +634,44 @@ class ScheduleService {
       return { success: true, report };
     } catch (error) {
       logger.error('生成每日报告过程中发生错误:', error.message);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // 爬取A股数据
+  async crawlChinaStockData() {
+    try {
+      logger.info('开始执行A股数据爬取任务...');
+      const crawlStart = new Date();
+      
+      // 爬取A股实时数据
+      const realtimeResult = await chinaStockCrawler.fetchRealTimeData();
+      
+      // 爬取A股基本面数据
+      const fundamentalResult = await chinaStockCrawler.fetchFundamentalData();
+      
+      // 爬取A股历史数据（可选，视系统性能而定）
+      const historicalResult = await chinaStockCrawler.fetchHistoricalData();
+      
+      const crawlEnd = new Date();
+      const duration = (crawlEnd - crawlStart) / 1000;
+      
+      // 汇总爬取结果
+      const crawlResult = {
+        realtimeData: realtimeResult,
+        fundamentalData: fundamentalResult,
+        historicalData: historicalResult,
+        startTime: crawlStart.toISOString(),
+        endTime: crawlEnd.toISOString(),
+        duration: duration.toFixed(2)
+      };
+      
+      logger.info(`✓ A股数据爬取任务完成，耗时: ${duration.toFixed(2)} 秒`);
+      logger.info(`爬取结果: ${JSON.stringify(crawlResult, null, 2)}`);
+      
+      return { success: true, crawlResult };
+    } catch (error) {
+      logger.error('执行A股数据爬取任务过程中发生错误:', error.message);
       return { success: false, error: error.message };
     }
   }
