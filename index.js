@@ -191,12 +191,30 @@ app.get('/health', (req, res) => {
 });
 
 // API路由前缀 - 使用性能监控包装每个路由组
-app.use('/api/auth', logPerformance.bind(null, 'Auth路由'), authRoutes);
-app.use('/api/users', logPerformance.bind(null, 'User路由'), userRoutes);
-app.use('/api/stocks', logPerformance.bind(null, 'Stock路由'), stockRoutes);
-app.use('/api/analysis', logPerformance.bind(null, 'Analysis路由'), analysisRoutes);
-app.use('/api/recommendations', logPerformance.bind(null, 'Recommendations路由'), recommendationRoutes);
-app.use('/api/news', logPerformance.bind(null, 'News路由'), newsRoutes);
+// 修复logPerformance包装函数的使用方式
+app.use('/api/auth', (req, res, next) => {
+  logPerformance('Auth路由', () => authRoutes(req, res, next)).catch(next);
+});
+
+app.use('/api/users', (req, res, next) => {
+  logPerformance('User路由', () => userRoutes(req, res, next)).catch(next);
+});
+
+app.use('/api/stocks', (req, res, next) => {
+  logPerformance('Stock路由', () => stockRoutes(req, res, next)).catch(next);
+});
+
+app.use('/api/analysis', (req, res, next) => {
+  logPerformance('Analysis路由', () => analysisRoutes(req, res, next)).catch(next);
+});
+
+app.use('/api/recommendations', (req, res, next) => {
+  logPerformance('Recommendations路由', () => recommendationRoutes(req, res, next)).catch(next);
+});
+
+app.use('/api/news', (req, res, next) => {
+  logPerformance('News路由', () => newsRoutes(req, res, next)).catch(next);
+});
 
 // 首页路由 - 增强版本
 app.get('/', (req, res) => {
