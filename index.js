@@ -12,7 +12,16 @@ const { logger, requestLogger, errorLogger, logPerformance } = require('./utils/
 
 // 导入Swagger相关模块
 const swaggerUi = require('swagger-ui-express');
-const swaggerSpecs = require('./swagger.js');
+const fs = require('fs');
+
+// 读取生成的Swagger文档
+let swaggerSpecs;
+try {
+  swaggerSpecs = JSON.parse(fs.readFileSync(path.join(__dirname, 'build', 'swagger.json'), 'utf8'));
+} catch (error) {
+  logger.warn('Swagger文档未找到，将使用空配置');
+  swaggerSpecs = {};
+}
 
 // 导入数据库连接函数
 const { connectDB, closeDB, isMongoDBConnected } = require('./config/db.js');

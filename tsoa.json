@@ -1,0 +1,38 @@
+{
+  "entryFile": "./index.js",
+  "noImplicitAdditionalProperties": "throw-on-extras",
+  "controllerPathGlobs": ["./controllers/*.controller.js"],
+  "spec": {
+    "outputDirectory": "./build",
+    "specFile": "swagger.json"
+  },
+  "routes": {
+    "routesDir": "./build"
+  },
+  "swagger": {
+    "info": {
+      "title": "皓月量化智能引擎API文档",
+      "description": "提供股票数据、智能分析和用户管理等功能的API接口文档",
+      "version": "1.0.0",
+      "contact": {
+        "name": "皓月量化团队",
+        "email": "contact@haoyue-quant.com"
+      },
+      "license": {
+        "name": "MIT License",
+        "url": "https://opensource.org/licenses/MIT"
+      }
+    },
+    "schemes": ["http"],
+    "consumes": ["application/json"],
+    "produces": ["application/json"],
+    "securityDefinitions": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "用于访问受保护资源的JWT令牌"
+      }
+    }
+  }
+}
