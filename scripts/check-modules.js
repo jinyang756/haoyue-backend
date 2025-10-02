@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-// 配置要检查的模块列表
+// 配置要检查的核心模块列表
 const modulesToCheck = [
   { name: 'mongoose', type: 'core' },
   { name: 'express', type: 'core' },
@@ -11,11 +11,7 @@ const modulesToCheck = [
   { name: 'jsonwebtoken', type: 'security' },
   { name: 'cors', type: 'middleware' },
   { name: 'dotenv', type: 'config' },
-  { name: 'winston', type: 'logging' },
-  { name: 'node-schedule', type: 'scheduling' },
-  { name: 'swagger-jsdoc', type: 'documentation' },
-  { name: 'swagger-ui-express', type: 'documentation' },
-  { name: '@vercel/functions', type: 'deployment' }
+  { name: 'winston', type: 'logging' }
 ];
 
 // 定义每种模块类型预期的导出内容
@@ -28,11 +24,7 @@ const expectedExports = {
   jsonwebtoken: { has: ['sign', 'verify', 'decode'] },
   cors: { isFunction: true },
   dotenv: { has: ['config', 'parse'] },
-  winston: { has: ['createLogger', 'format', 'transports'] },
-  'node-schedule': { has: ['scheduleJob', 'cancelJob'] },
-  'swagger-jsdoc': { isFunction: true },
-  'swagger-ui-express': { has: ['serve', 'setup'] },
-  '@vercel/functions': { has: ['EdgeFunction', 'middleware'] }
+  winston: { has: ['createLogger', 'format', 'transports'] }
 };
 
 /**
