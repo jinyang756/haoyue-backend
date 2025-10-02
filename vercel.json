@@ -30,6 +30,7 @@
   ],
   "env": {
     "NODE_ENV": "production",
+    "VERCEL": "1",
     "MONGODB_URI": "mongodb+srv://Vercel-Admin-haoyue:MypbYEewIVAA78qd@haoyue.7qpdasq.mongodb.net/?retryWrites=true&w=majority",
     "JWT_SECRET": "@jwt_secret",
     "JWT_REFRESH_SECRET": "@jwt_refresh_secret"

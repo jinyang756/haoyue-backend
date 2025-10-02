@@ -403,6 +403,25 @@ sudo certbot --nginx -d api.haoyuequant.com
 
 项目的变更历史记录在 [CHANGELOG.md](../CHANGELOG.md) 文件中。请在提交PR时更新此文件，记录重要的变更。
 
+## 数据可视化
+
+项目使用 MongoDB Charts 进行数据可视化展示：
+
+- [公开仪表板](https://charts.mongodb.com/charts-haoyue-ejjgvho/public/dashboards/68de15da-809c-406a-8ad5-92c828f50dcb) - 展示公开的股票数据和分析结果
+- [私有仪表板](https://charts.mongodb.com/charts-haoyue-ejjgvho/dashboards/68de15da-809c-406a-8ad5-92c828f50dcb) - 包含详细的系统数据和管理功能（仅限授权用户访问）
+
+详细信息请参见 [MONGODB_CHARTS.md](../MONGODB_CHARTS.md) 文件。
+
+## 前端集成
+
+前端项目部署在Netlify (zhengyutouzi.com)，通过API与后端服务通信。前端项目包含：
+
+- 专业的首页展示页面
+- 用户认证和权限管理界面
+- 股票数据展示和分析界面
+- AI分析结果展示界面
+- 响应式设计适配各种设备
+
 ## 文档规范
 
 所有 Markdown 文档都应遵循项目规范，详情请参见 [Markdown 格式规范指南](docs/MARKDOWN_STYLE_GUIDE.md)。
