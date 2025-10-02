@@ -10,7 +10,11 @@
     "format": "prettier --write .",
     "schedule": "node schedule-init.js",
     "schedule-dev": "nodemon schedule-init.js",
-    "build-docs": "node swagger.js"
+    "build-docs": "node swagger.js",
+    "generate-data": "node scripts/generate-stock-data.js",
+    "init-data": "node scripts/init-stock-data.js",
+    "init-china-data": "node scripts/init-china-stock-data.js",
+    "test-db": "node scripts/test-mongodb-connection.js"
   },
   "keywords": [
     "stock",
