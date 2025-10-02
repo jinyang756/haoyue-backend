@@ -401,6 +401,10 @@ sudo certbot --nginx -d api.haoyuequant.com
 3. 提交代码
 4. 创建Pull Request
 
+## 文档规范
+
+所有 Markdown 文档都应遵循项目规范，详情请参见 [Markdown 格式规范指南](docs/MARKDOWN_STYLE_GUIDE.md)。
+
 ## 许可证
 
 本项目采用MIT许可证。
