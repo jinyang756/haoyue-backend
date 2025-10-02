@@ -136,6 +136,7 @@ const stockRoutes = require('./routes/stock.routes');
 const analysisRoutes = require('./routes/analysis.routes');
 const recommendationRoutes = require('./routes/recommendation.routes');
 const newsRoutes = require('./routes/news.routes');
+const subscriptionRoutes = require('./routes/subscription.routes');
 
 // 配置Swagger文档路由（在Vercel环境中也启用，但使用特殊处理）
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL === '1') {
@@ -195,6 +196,7 @@ app.get('/health', (req, res) => {
       analysis: '/api/analysis',
       recommendations: '/api/recommendations',
       news: '/api/news',
+      subscriptions: '/api/subscriptions',
       docs: '/api/docs'
     }
   };
@@ -239,6 +241,10 @@ app.use('/api/recommendations', (req, res, next) => {
 
 app.use('/api/news', (req, res, next) => {
   logPerformance('News路由', () => newsRoutes(req, res, next)).catch(next);
+});
+
+app.use('/api/subscriptions', (req, res, next) => {
+  logPerformance('Subscription路由', () => subscriptionRoutes(req, res, next)).catch(next);
 });
 
 // 根目录路由

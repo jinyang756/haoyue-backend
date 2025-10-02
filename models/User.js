@@ -147,6 +147,18 @@ UserSchema.virtual('daysRegistered').get(function() {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 });
 
+// 虚拟字段：是否为VIP用户
+UserSchema.virtual('isVIP').get(function() {
+  return this.role === 'vip' || this.role === 'admin';
+});
+
+// 虚拟字段：订阅是否有效
+UserSchema.virtual('hasValidSubscription').get(function() {
+  return this.subscription && 
+         this.subscription.isActive && 
+         (!this.subscription.expiresAt || this.subscription.expiresAt > new Date());
+});
+
 // 查询中间件：默认查询活跃用户
 UserSchema.pre(/^find/, function(next) {
   this.find({ status: { $ne: 'banned' } });
