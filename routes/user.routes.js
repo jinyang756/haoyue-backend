@@ -63,7 +63,7 @@ const { protect, authorize, validateRequest } = require('../middleware/auth');
 
 /**
  * @swagger
- * /api/users:
+ * /:
  *   get:
  *     summary: 获取所有用户（仅管理员）
  *     tags: [用户管理]
@@ -113,7 +113,7 @@ router.get('/', protect, authorize('admin'), async (req, res) => {
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /{id}:
  *   get:
  *     summary: 获取用户详情
  *     tags: [用户管理]
@@ -176,7 +176,7 @@ router.get('/:id', protect, async (req, res) => {
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /{id}:
  *   put:
  *     summary: 更新用户信息
  *     tags: [用户管理]
@@ -249,7 +249,7 @@ router.put('/:id', protect, [
 
 /**
  * @swagger
- * /api/users/{id}:
+ * /{id}:
  *   delete:
  *     summary: 删除用户（仅管理员）
  *     tags: [用户管理]
@@ -307,7 +307,7 @@ router.delete('/:id', protect, authorize('admin'), async (req, res) => {
 
 /**
  * @swagger
- * /api/users/{id}/password:
+ * /{id}/password:
  *   put:
  *     summary: 更新用户密码
  *     tags: [用户管理]

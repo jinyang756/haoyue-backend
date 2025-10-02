@@ -25,8 +25,8 @@ if (fs.existsSync(swaggerFilePath)) {
     console.log(`  - API标题: ${swaggerJson.info?.title}`);
     console.log(`  - 路由数量: ${Object.keys(swaggerJson.paths || {}).length}`);
     
-    // 检查关键路由是否存在
-    const keyRoutes = ['/api/stocks', '/api/auth', '/api/users'];
+    // 检查关键路由是否存在（使用相对路径）
+    const keyRoutes = ['/register', '/login', '/'];
     keyRoutes.forEach(route => {
       if (swaggerJson.paths && swaggerJson.paths[route]) {
         console.log(`  ✓ 路由文档存在: ${route}`);

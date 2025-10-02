@@ -123,7 +123,7 @@ const { protect, authorize, validateRequest } = require('../middleware/auth');
 
 /**
  * @swagger
- * /api/stocks:
+ * /:
  *   get:
  *     summary: 获取所有股票列表
  *     tags: [股票]
@@ -153,7 +153,7 @@ router.get('/', stockController.getAllStocks);
 
 /**
  * @swagger
- * /api/stocks/search:
+ * /search:
  *   get:
  *     summary: 搜索股票
  *     tags: [股票]
@@ -188,7 +188,7 @@ router.get('/search', stockController.searchStocks);
 
 /**
  * @swagger
- * /api/stocks/sectors:
+ * /sectors:
  *   get:
  *     summary: 获取所有行业板块
  *     tags: [股票]
@@ -213,11 +213,11 @@ router.get('/search', stockController.searchStocks);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-router.get('/sectors', stockController.getStockSectors);
+router.get('/sectors', stockController.getAllSectors);
 
 /**
  * @swagger
- * /api/stocks/{symbol}:
+ * /{symbol}:
  *   get:
  *     summary: 获取股票详情
  *     tags: [股票]
@@ -257,7 +257,7 @@ router.get('/:symbol', stockController.getStockBySymbol);
 
 /**
  * @swagger
- * /api/stocks/{symbol}/history:
+ * /{symbol}/history:
  *   get:
  *     summary: 获取股票历史数据
  *     tags: [股票]
@@ -305,7 +305,7 @@ router.get('/:symbol/history', stockController.getStockHistory);
 
 /**
  * @swagger
- * /api/stocks/{symbol}/technical:
+ * /{symbol}/technical:
  *   get:
  *     summary: 获取股票技术指标
  *     tags: [股票]
@@ -345,7 +345,7 @@ router.get('/:symbol/technical', stockController.getTechnicalIndicators);
 
 /**
  * @swagger
- * /api/stocks/{symbol}/news:
+ * /{symbol}/news:
  *   get:
  *     summary: 获取股票相关新闻
  *     tags: [股票]
@@ -387,7 +387,7 @@ router.get('/:symbol/news', stockController.getStockNews);
 
 /**
  * @swagger
- * /api/stocks/{symbol}/update:
+ * /{symbol}/update:
  *   post:
  *     summary: 更新股票数据
  *     tags: [股票]

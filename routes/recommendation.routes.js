@@ -101,7 +101,7 @@ const { protect, authorize, validateRequest } = require('../middleware/auth');
 
 /**
  * @swagger
- * /api/recommendations:
+ * /:
  *   get:
  *     summary: 获取推荐列表
  *     tags: [推荐]
@@ -211,7 +211,7 @@ router.get('/', protect, async (req, res) => {
 
 /**
  * @swagger
- * /api/recommendations/{id}:
+ * /{id}:
  *   get:
  *     summary: 获取单个推荐详情
  *     tags: [推荐]
@@ -293,7 +293,7 @@ router.get('/:id', protect, async (req, res) => {
 
 /**
  * @swagger
- * /api/recommendations:
+ * /:
  *   post:
  *     summary: 创建推荐（仅管理员）
  *     tags: [推荐]
@@ -367,7 +367,7 @@ router.post('/', protect, authorize('admin'), [
 
 /**
  * @swagger
- * /api/recommendations/{id}:
+ * /{id}:
  *   put:
  *     summary: 更新推荐（仅管理员）
  *     tags: [推荐]
@@ -472,7 +472,7 @@ router.put('/:id', protect, authorize('admin'), async (req, res) => {
 
 /**
  * @swagger
- * /api/recommendations/{id}:
+ * /{id}:
  *   delete:
  *     summary: 删除推荐（仅管理员）
  *     tags: [推荐]

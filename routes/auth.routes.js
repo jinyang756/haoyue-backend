@@ -82,7 +82,7 @@ const authMiddleware = getAuthMiddleware();
 
 /**
  * @swagger
- * /api/auth/register:
+ * /register:
  *   post:
  *     summary: 用户注册
  *     tags: [认证]
@@ -120,7 +120,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/login:
+ * /login:
  *   post:
  *     summary: 用户登录
  *     tags: [认证]
@@ -156,7 +156,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/refresh-token:
+ * /refresh-token:
  *   post:
  *     summary: 刷新访问令牌
  *     tags: [认证]
@@ -191,7 +191,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/verify-email/{token}:
+ * /verify-email/{token}:
  *   get:
  *     summary: 验证邮箱
  *     tags: [认证]
@@ -216,7 +216,7 @@ router.get('/verify-email/:token', authController.verifyEmail);
 
 /**
  * @swagger
- * /api/auth/forgot-password:
+ * /forgot-password:
  *   post:
  *     summary: 忘记密码
  *     tags: [认证]
@@ -247,7 +247,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/reset-password/{token}:
+ * /reset-password/{token}:
  *   post:
  *     summary: 重置密码
  *     tags: [认证]
@@ -285,7 +285,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/me:
+ * /me:
  *   get:
  *     summary: 获取当前用户信息
  *     tags: [认证]
@@ -309,7 +309,7 @@ router.get('/me', [...authMiddleware], authController.getCurrentUser);
 
 /**
  * @swagger
- * /api/auth/logout:
+ * /logout:
  *   post:
  *     summary: 用户登出
  *     tags: [认证]
@@ -329,7 +329,7 @@ router.post('/logout', [...authMiddleware], authController.logout);
 
 /**
  * @swagger
- * /api/auth/resend-verification:
+ * /resend-verification:
  *   post:
  *     summary: 重新发送验证邮件
  *     tags: [认证]
@@ -360,7 +360,7 @@ router.post(
 
 /**
  * @swagger
- * /api/auth/get-management-token: 
+ * /get-management-token: 
  *   get: 
  *     summary: 获取Auth0管理API令牌
  *     tags: [认证管理]
@@ -407,7 +407,7 @@ router.get('/get-management-token', protect, authorize('admin'), async (req, res
 
   /**
    * @swagger
-   * /api/auth/get-auth0-users: 
+   * /get-auth0-users: 
    *   get: 
    *     summary: 使用Auth0管理API获取用户列表
    *     tags: [认证管理]

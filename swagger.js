@@ -24,7 +24,7 @@ const doc = {
       description: '用户认证相关接口'
     },
     {
-      name: '用户',
+      name: '用户管理',
       description: '用户管理相关接口'
     },
     {
@@ -34,6 +34,14 @@ const doc = {
     {
       name: '分析',
       description: '股票分析相关接口'
+    },
+    {
+      name: '推荐',
+      description: '股票推荐相关接口'
+    },
+    {
+      name: '新闻',
+      description: '新闻资讯相关接口'
     }
   ],
   securityDefinitions: {
@@ -246,7 +254,14 @@ const doc = {
 };
 
 const outputFile = './build/swagger.json';
-const endpointsFiles = ['./routes/*.routes.js'];
+const endpointsFiles = [
+  './routes/auth.routes.js',
+  './routes/user.routes.js',
+  './routes/stock.routes.js',
+  './routes/analysis.routes.js',
+  './routes/recommendation.routes.js',
+  './routes/news.routes.js'
+];
 
 swaggerAutogen(outputFile, endpointsFiles, doc).then(() => {
   console.log('Swagger 文档生成完成！');

@@ -7,7 +7,7 @@ const auth = require('../middleware/auth');
 
 /**
  * @swagger
- * /api/news: 
+ * /: 
  *   get: 
  *     summary: 获取新闻列表
  *     tags: [News]
@@ -95,7 +95,7 @@ router.get('/', auth.protect, async (req, res) => {
 
 /**
  * @swagger
- * /api/news/{id}: 
+ * /{id}: 
  *   get: 
  *     summary: 获取新闻详情
  *     tags: [News]

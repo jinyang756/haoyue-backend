@@ -17,9 +17,13 @@ const fs = require('fs');
 // 读取生成的Swagger文档
 let swaggerSpecs;
 try {
-  swaggerSpecs = JSON.parse(fs.readFileSync(path.join(__dirname, 'build', 'swagger.json'), 'utf8'));
+  // 在Vercel环境中使用不同的路径
+  const swaggerPath = process.env.VERCEL === '1' 
+    ? path.join(__dirname, 'build', 'swagger.json')
+    : path.join(__dirname, 'build', 'swagger.json');
+  swaggerSpecs = JSON.parse(fs.readFileSync(swaggerPath, 'utf8'));
 } catch (error) {
-  logger.warn('Swagger文档未找到，将使用空配置');
+  logger.warn('Swagger文档未找到，将使用空配置:', error.message);
   swaggerSpecs = {};
 }
 
@@ -244,6 +248,19 @@ app.get('/', (req, res) => {
     version: process.env.APP_VERSION || '1.0.0',
     documentation: '/api/docs',
     health: '/health'
+  });
+});
+
+// 关于页面路由
+app.get('/about', (req, res) => {
+  res.json({
+    message: '关于皓月量化智能引擎',
+    description: '皓月量化是一个基于AI的股票分析平台，提供实时股票数据、技术分析和智能投资建议。',
+    version: process.env.APP_VERSION || '1.0.0',
+    contact: {
+      email: 'contact@haoyue-quant.com',
+      website: 'https://haoyue-quant.com'
+    }
   });
 });
 

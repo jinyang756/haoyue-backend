@@ -126,7 +126,7 @@ const { protect, validateRequest } = require('../middleware/auth');
 
 /**
  * @swagger
- * /api/analysis:
+ * /:
  *   post:
  *     summary: 创建AI分析任务
  *     tags: [AI分析]
@@ -180,7 +180,7 @@ router.post(
 
 /**
  * @swagger
- * /api/analysis:
+ * /:
  *   get:
  *     summary: 获取分析任务列表
  *     tags: [AI分析]
@@ -242,7 +242,7 @@ router.get('/', protect, aiController.getAnalysisList);
 
 /**
  * @swagger
- * /api/analysis/{id}:
+ * /{id}:
  *   get:
  *     summary: 获取分析任务详情
  *     tags: [AI分析]
@@ -280,7 +280,7 @@ router.get('/:id', protect, aiController.getAnalysisById);
 
 /**
  * @swagger
- * /api/analysis/{id}/cancel:
+ * /{id}/cancel:
  *   put:
  *     summary: 取消分析任务
  *     tags: [AI分析]
@@ -324,7 +324,7 @@ router.put('/:id/cancel', protect, aiController.cancelAnalysis);
 
 /**
  * @swagger
- * /api/analysis/stats:
+ * /stats:
  *   get:
  *     summary: 获取分析统计
  *     tags: [AI分析]
@@ -349,7 +349,7 @@ router.get('/stats', protect, aiController.getAnalysisStats);
 
 /**
  * @swagger
- * /api/analysis/{id}/favorite:
+ * /{id}/favorite:
  *   put:
  *     summary: 标记分析结果为收藏
  *     tags: [AI分析]
@@ -411,7 +411,7 @@ router.put(
 
 /**
  * @swagger
- * /api/analysis/{id}/share:
+ * /{id}/share:
  *   post:
  *     summary: 分享分析结果
  *     tags: [AI分析]
@@ -489,7 +489,7 @@ router.post(
 
 /**
  * @swagger
- * /api/analysis/{id}/notes:
+ * /{id}/notes:
  *   post:
  *     summary: 添加分析笔记
  *     tags: [AI分析]
