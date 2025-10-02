@@ -1,319 +1,417 @@
-// 全局模拟数据管理模块
-// 用于在MongoDB未连接时提供模拟数据
+const crypto = require('crypto');
+const { logger } = require('./logger');
 
-// 模拟用户数据
-const mockUsers = [
-  {
-    id: '1',
-    username: 'admin',
-    email: 'admin@haoyue.com',
-    password: '$2a$10$Qe1l55O1W.7d9qH5W7QeYeY1Qe1l55O1W.7d9qH5W7QeYeY1Qe', // 模拟加密的密码 'admin123'
-    name: '管理员',
-    role: 'admin',
-    status: 'active',
-    emailVerified: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-    lastLogin: new Date()
-  },
-  {
-    id: '2',
-    username: 'user1',
-    email: 'user1@haoyue.com',
-    password: '$2a$10$Qe1l55O1W.7d9qH5W7QeYeY1Qe1l55O1W.7d9qH5W7QeYeY1Qe', // 模拟加密的密码 'user123'
-    name: '普通用户',
-    role: 'user',
-    status: 'active',
-    emailVerified: true,
-    createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-    lastLogin: new Date()
-  },
-  {
-    id: '3',
-    username: 'vip1',
-    email: 'vip1@haoyue.com',
-    password: '$2a$10$Qe1l55O1W.7d9qH5W7QeYeY1Qe1l55O1W.7d9qH5W7QeYeY1Qe', // 模拟加密的密码 'vip123'
-    name: 'VIP用户',
-    role: 'vip',
-    status: 'active',
-    emailVerified: true,
-    createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-    lastLogin: new Date()
+// 模拟数据存储
+class MockDataManager {
+  constructor() {
+    this.mockUsers = [];
+    this.mockStocks = [];
+    this.mockAnalyses = [];
+    this.mockRecommendations = [];
+    this.mockNews = [];
+    
+    // 初始化模拟数据
+    this.initializeMockData();
   }
-];
 
-// 模拟股票数据
-const mockStocks = [
-  {
-    id: '1',
-    symbol: 'AAPL',
-    name: '苹果公司',
-    price: 187.23,
-    change: 1.23,
-    changePercent: 0.66,
-    marketCap: 3.02,
-    sector: '科技',
-    industry: '电子设备',
-    description: '苹果公司设计、制造和销售智能手机、个人电脑、平板电脑、可穿戴设备和配件，并提供各种相关服务。',
-    isActive: true,
-    createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date()
-  },
-  {
-    id: '2',
-    symbol: 'MSFT',
-    name: '微软公司',
-    price: 410.56,
-    change: -2.34,
-    changePercent: -0.57,
-    marketCap: 3.25,
-    sector: '科技',
-    industry: '软件服务',
-    description: '微软公司开发、授权和支持软件、服务、设备和解决方案。',
-    isActive: true,
-    createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date()
-  },
-  {
-    id: '3',
-    symbol: 'TSLA',
-    name: '特斯拉',
-    price: 232.87,
-    change: 5.67,
-    changePercent: 2.5,
-    marketCap: 0.75,
-    sector: '汽车',
-    industry: '汽车制造',
-    description: '特斯拉设计、开发、制造和销售全电动汽车和能源存储系统，并提供相关服务。',
-    isActive: true,
-    createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date()
-  },
-  {
-    id: '4',
-    symbol: 'AMZN',
-    name: '亚马逊',
-    price: 198.45,
-    change: 0.89,
-    changePercent: 0.45,
-    marketCap: 1.98,
-    sector: '零售',
-    industry: '电子商务',
-    description: '亚马逊是一家全球性的电子商务、云计算、数字流媒体和人工智能公司。',
-    isActive: true,
-    createdAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date()
-  },
-  {
-    id: '5',
-    symbol: 'GOOGL',
-    name: '谷歌',
-    price: 134.78,
-    change: -1.23,
-    changePercent: -0.91,
-    marketCap: 1.92,
-    sector: '科技',
-    industry: '互联网服务',
-    description: '谷歌是一家全球性的科技公司，专注于互联网相关服务和产品。',
-    isActive: true,
-    createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date()
+  // 初始化模拟数据
+  initializeMockData() {
+    this.initMockUsers();
+    this.initMockStocks();
+    this.initMockAnalyses();
+    this.initMockRecommendations();
+    this.initMockNews();
   }
-];
 
-// 模拟分析数据
-const mockAnalyses = [
-  {
-    id: '1',
-    stockSymbol: 'AAPL',
-    stockName: '苹果公司',
-    analysisType: 'comprehensive',
-    timeRange: '1y',
-    status: 'completed',
-    progress: 100,
-    userId: '1',
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    completedAt: new Date(),
-    results: {
-      overallScore: 85,
-      recommendation: '买入',
-      technicalScore: 82,
-      fundamentalScore: 88,
-      riskLevel: '中等',
-      priceTarget: 205.00
-    }
-  },
-  {
-    id: '2',
-    stockSymbol: 'MSFT',
-    stockName: '微软公司',
-    analysisType: 'technical',
-    timeRange: '6m',
-    status: 'in-progress',
-    progress: 65,
-    userId: '1',
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-  },
-  {
-    id: '3',
-    stockSymbol: 'TSLA',
-    stockName: '特斯拉',
-    analysisType: 'fundamental',
-    timeRange: '1y',
-    status: 'completed',
-    progress: 100,
-    userId: '2',
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
-    completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    results: {
-      overallScore: 72,
-      recommendation: '持有',
-      technicalScore: 78,
-      fundamentalScore: 68,
-      riskLevel: '高',
-      priceTarget: 250.00
-    }
-  }
-];
-
-// 模拟推荐数据
-const mockRecommendations = [
-  {
-    id: '1',
-    userId: '1',
-    title: '科技股投资组合推荐',
-    description: '根据您的风险偏好和投资目标，推荐的科技股投资组合',
-    status: 'active',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-    stocks: [
+  // 初始化模拟用户数据
+  initMockUsers() {
+    // 注意：这只是模拟数据，在生产环境中密码应该使用bcrypt等安全方式哈希存储
+    this.mockUsers = [
       {
-        symbol: 'AAPL',
-        name: '苹果公司',
-        recommendation: '买入',
-        rating: 8.5,
-        targetPrice: 205.00
+        id: '1',
+        username: 'admin',
+        email: 'admin@example.com',
+        // 模拟密码: admin123 (使用SHA-256哈希)
+        passwordHash: '0192023a7bbd73250516f069df18b500',
+        role: 'admin',
+        createdAt: new Date('2023-01-01T00:00:00Z')
       },
       {
-        symbol: 'MSFT',
-        name: '微软公司',
-        recommendation: '买入',
-        rating: 8.7,
-        targetPrice: 450.00
+        id: '2',
+        username: 'user1',
+        email: 'user1@example.com',
+        // 模拟密码: user123 (使用SHA-256哈希)
+        passwordHash: '6ad14ba9986e3615423dfca256d04e3f',
+        role: 'user',
+        createdAt: new Date('2023-01-02T00:00:00Z')
       },
       {
-        symbol: 'GOOGL',
-        name: '谷歌',
-        recommendation: '买入',
-        rating: 8.0,
-        targetPrice: 150.00
+        id: '3',
+        username: 'analyst1',
+        email: 'analyst1@example.com',
+        // 模拟密码: analyst123 (使用SHA-256哈希)
+        passwordHash: '4297f44b13955235245b2497399d7a93',
+        role: 'analyst',
+        createdAt: new Date('2023-01-03T00:00:00Z')
       }
-    ]
-  },
-  {
-    id: '2',
-    userId: '2',
-    title: '热门成长股推荐',
-    description: '当前市场上表现强劲的成长股推荐',
-    status: 'active',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    updatedAt: new Date(),
-    stocks: [
+    ];
+  }
+
+  // 初始化模拟股票数据
+  initMockStocks() {
+    this.mockStocks = [
       {
-        symbol: 'TSLA',
-        name: '特斯拉',
-        recommendation: '持有',
-        rating: 7.2,
-        targetPrice: 250.00
+        id: 'AAPL',
+        name: 'Apple Inc.',
+        industry: 'Technology',
+        currentPrice: 182.48,
+        previousClose: 181.25,
+        change: 1.23,
+        changePercent: 0.68,
+        marketCap: 2850000000000,
+        volume: 52000000,
+        peRatio: 29.45,
+        sector: 'Consumer Electronics',
+        description: 'Apple Inc. designs, manufactures, and markets smartphones, personal computers, tablets, wearables, and accessories worldwide.',
+        createdAt: new Date('2023-01-01T00:00:00Z'),
+        updatedAt: new Date(),
+        // 添加技术指标
+        technicalIndicators: {
+          rsi: 65.2,
+          macd: 2.1,
+          sma20: 178.5,
+          sma50: 172.3,
+          sma200: 158.7,
+          bollingerUpper: 189.3,
+          bollingerLower: 174.6,
+          volumeAvg: 48000000,
+          atr: 3.2
+        },
+        // 添加基本面指标
+        fundamentalIndicators: {
+          eps: 6.19,
+          revenue: 385000000000,
+          profitMargin: 0.26,
+          debtToEquity: 1.7,
+          roe: 0.42,
+          dividendYield: 0.0055
+        }
       },
       {
-        symbol: 'AMZN',
-        name: '亚马逊',
-        recommendation: '买入',
-        rating: 7.8,
-        targetPrice: 220.00
+        id: 'MSFT',
+        name: 'Microsoft Corporation',
+        industry: 'Technology',
+        currentPrice: 372.35,
+        previousClose: 370.18,
+        change: 2.17,
+        changePercent: 0.59,
+        marketCap: 3020000000000,
+        volume: 28000000,
+        peRatio: 34.8,
+        sector: 'Software',
+        description: 'Microsoft Corporation develops, licenses, and supports software, services, devices, and solutions worldwide.',
+        createdAt: new Date('2023-01-01T00:00:00Z'),
+        updatedAt: new Date(),
+        technicalIndicators: {
+          rsi: 58.7,
+          macd: 1.3,
+          sma20: 368.2,
+          sma50: 361.4,
+          sma200: 328.9,
+          bollingerUpper: 378.1,
+          bollingerLower: 364.3,
+          volumeAvg: 26000000,
+          atr: 4.1
+        },
+        fundamentalIndicators: {
+          eps: 10.69,
+          revenue: 211000000000,
+          profitMargin: 0.37,
+          debtToEquity: 0.5,
+          roe: 0.34,
+          dividendYield: 0.0082
+        }
+      },
+      {
+        id: 'GOOGL',
+        name: 'Alphabet Inc.',
+        industry: 'Technology',
+        currentPrice: 142.58,
+        previousClose: 141.23,
+        change: 1.35,
+        changePercent: 0.96,
+        marketCap: 1980000000000,
+        volume: 18000000,
+        peRatio: 28.7,
+        sector: 'Internet',
+        description: 'Alphabet Inc. provides various products and services globally. It operates through Google Services, Google Cloud, and Other Bets segments.',
+        createdAt: new Date('2023-01-01T00:00:00Z'),
+        updatedAt: new Date(),
+        technicalIndicators: {
+          rsi: 62.4,
+          macd: 0.9,
+          sma20: 139.8,
+          sma50: 136.2,
+          sma200: 128.5,
+          bollingerUpper: 146.3,
+          bollingerLower: 138.1,
+          volumeAvg: 16000000,
+          atr: 2.8
+        },
+        fundamentalIndicators: {
+          eps: 4.96,
+          revenue: 207000000000,
+          profitMargin: 0.21,
+          debtToEquity: 0.1,
+          roe: 0.18,
+          dividendYield: 0
+        }
       }
-    ]
+    ];
   }
-];
 
-// 模拟新闻数据
-const mockNews = [
-  {
-    id: '1',
-    title: '苹果公司发布最新季度财报，营收超预期',
-    content: '苹果公司今日发布最新季度财报，显示营收和利润均超出市场预期。公司CEO表示，iPhone和服务业务表现强劲...',
-    source: '财经新闻',
-    publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    stockSymbols: ['AAPL']
-  },
-  {
-    id: '2',
-    title: '微软宣布重大AI战略升级，股价应声上涨',
-    content: '微软今日宣布了一系列AI战略升级，包括新一代AI模型和云服务整合。分析师认为这将进一步巩固微软在企业AI市场的领先地位...',
-    source: '科技日报',
-    publishedAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
-    stockSymbols: ['MSFT']
-  },
-  {
-    id: '3',
-    title: '特斯拉第四季度汽车交付量创新高',
-    content: '特斯拉公布第四季度汽车交付量，创历史新高。尽管面临供应链挑战，公司仍实现了强劲的交付增长...',
-    source: '汽车新闻',
-    publishedAt: new Date(Date.now() - 8 * 60 * 60 * 1000),
-    stockSymbols: ['TSLA']
+  // 初始化模拟分析数据
+  initMockAnalyses() {
+    this.mockAnalyses = [
+      {
+        id: '1',
+        stockId: 'AAPL',
+        userId: '3',
+        type: 'comprehensive',
+        result: {
+          overallScore: 85,
+          recommendation: 'Buy',
+          confidenceLevel: 0.85
+        },
+        factors: [
+          { name: 'Technical Strength', value: 88 },
+          { name: 'Fundamental Health', value: 90 },
+          { name: 'Sentiment Score', value: 78 }
+        ],
+        analysisDate: new Date('2023-08-15T10:30:00Z'),
+        createdAt: new Date('2023-08-15T10:30:00Z'),
+        updatedAt: new Date('2023-08-15T10:30:00Z')
+      },
+      {
+        id: '2',
+        stockId: 'MSFT',
+        userId: '3',
+        type: 'technical',
+        result: {
+          overallScore: 78,
+          recommendation: 'Hold',
+          confidenceLevel: 0.75
+        },
+        factors: [
+          { name: 'Trend Strength', value: 82 },
+          { name: 'Momentum', value: 75 },
+          { name: 'Volume Analysis', value: 76 }
+        ],
+        analysisDate: new Date('2023-08-14T14:20:00Z'),
+        createdAt: new Date('2023-08-14T14:20:00Z'),
+        updatedAt: new Date('2023-08-14T14:20:00Z')
+      }
+    ];
   }
-];
 
-// 生成模拟token
-const generateMockToken = (userId, role) => {
-  // 这只是一个简单的模拟token，实际应用中应该使用JWT等安全的认证方式
-  return `mock-token-${userId}-${role}-${Date.now()}`;
-};
+  // 初始化模拟推荐数据
+  initMockRecommendations() {
+    this.mockRecommendations = [
+      {
+        id: '1',
+        userId: '1',
+        stocks: ['AAPL', 'MSFT', 'GOOGL'],
+        reason: 'Strong fundamentals and growth potential in tech sector',
+        riskLevel: 'Medium',
+        recommendedDate: new Date('2023-08-16T09:00:00Z'),
+        createdAt: new Date('2023-08-16T09:00:00Z'),
+        updatedAt: new Date('2023-08-16T09:00:00Z')
+      },
+      {
+        id: '2',
+        userId: '2',
+        stocks: ['AAPL'],
+        reason: 'Technical indicators showing bullish trend',
+        riskLevel: 'Low',
+        recommendedDate: new Date('2023-08-15T16:30:00Z'),
+        createdAt: new Date('2023-08-15T16:30:00Z'),
+        updatedAt: new Date('2023-08-15T16:30:00Z')
+      }
+    ];
+  }
 
-// 模拟密码验证
-const mockMatchPassword = (password) => {
-  // 所有模拟用户的密码都是固定的
-  const validPasswords = ['admin123', 'user123', 'vip123'];
-  return validPasswords.includes(password);
-};
+  // 初始化模拟新闻数据
+  initMockNews() {
+    this.mockNews = [
+      {
+        id: '1',
+        stockId: 'AAPL',
+        title: 'Apple Announces New iPhone 15 Series',
+        source: 'TechCrunch',
+        url: 'https://techcrunch.com/apple-announces-new-iphone-15-series/',
+        publishDate: new Date('2023-09-12T09:00:00Z'),
+        sentiment: 'Positive',
+        createdAt: new Date('2023-09-12T09:00:00Z'),
+        updatedAt: new Date('2023-09-12T09:00:00Z')
+      },
+      {
+        id: '2',
+        stockId: 'MSFT',
+        title: 'Microsoft Reports Strong Quarterly Earnings',
+        source: 'CNBC',
+        url: 'https://cnbc.com/microsoft-reports-strong-quarterly-earnings/',
+        publishDate: new Date('2023-09-11T14:30:00Z'),
+        sentiment: 'Positive',
+        createdAt: new Date('2023-09-11T14:30:00Z'),
+        updatedAt: new Date('2023-09-11T14:30:00Z')
+      }
+    ];
+  }
 
-// 导出模拟数据和工具函数
-module.exports = {
-  mockUsers,
-  mockStocks,
-  mockAnalyses,
-  mockRecommendations,
-  mockNews,
-  generateMockToken,
-  mockMatchPassword,
-  // 添加新用户到模拟数据
-  addMockUser: (userData) => {
-    const newUser = {
-      id: Math.random().toString(36).substring(2, 15),
-      ...userData,
-      status: 'active',
-      emailVerified: true,
+  // 获取用户数据
+  getUsers() {
+    return [...this.mockUsers];
+  }
+
+  // 通过ID获取用户
+  getUserById(id) {
+    return this.mockUsers.find(user => user.id === id);
+  }
+
+  // 获取股票数据
+  getStocks() {
+    return [...this.mockStocks];
+  }
+
+  // 通过ID获取股票
+  getStockById(id) {
+    return this.mockStocks.find(stock => stock.id === id);
+  }
+
+  // 获取分析数据
+  getAnalyses() {
+    return [...this.mockAnalyses];
+  }
+
+  // 获取推荐数据
+  getRecommendations() {
+    return [...this.mockRecommendations];
+  }
+
+  // 获取新闻数据
+  getNews() {
+    return [...this.mockNews];
+  }
+
+  // 根据股票ID获取新闻
+  getNewsByStockId(stockId) {
+    return this.mockNews.filter(news => news.stockId === stockId);
+  }
+
+  // 验证用户密码（模拟实现）
+  mockMatchPassword(username, password) {
+    try {
+      // 注意：这只是模拟环境的简化实现，生产环境应使用bcrypt等安全库
+      const user = this.mockUsers.find(u => u.username === username);
+      if (!user) {
+        logger.warn(`用户 ${username} 不存在`);
+        return false;
+      }
+      
+      // 模拟密码验证（使用MD5哈希进行比较，实际生产环境应使用bcrypt等更安全的方式）
+      const passwordHash = this._mockHashPassword(password);
+      const match = passwordHash === user.passwordHash;
+      
+      if (match) {
+        logger.info(`用户 ${username} 登录验证成功`);
+      } else {
+        logger.warn(`用户 ${username} 密码验证失败`);
+      }
+      
+      return match;
+    } catch (error) {
+      logger.error('密码验证过程中出错:', error.message);
+      return false;
+    }
+  }
+  
+  // 模拟哈希密码的辅助方法
+  _mockHashPassword(password) {
+    try {
+      // 注意：这只是模拟环境的简化实现，生产环境应使用bcrypt等安全库
+      const hash = crypto.createHash('md5').update(password).digest('hex');
+      return hash;
+    } catch (error) {
+      logger.error('密码哈希过程中出错:', error.message);
+      // 在哈希过程失败时返回一个随机哈希以确保安全
+      return crypto.randomBytes(16).toString('hex');
+    }
+  }
+
+  // 添加新的分析记录
+  addMockAnalysis(analysis) {
+    const newAnalysis = {
+      id: `${Date.now()}`,
+      ...analysis,
       createdAt: new Date(),
-      updatedAt: new Date(),
-      lastLogin: new Date()
+      updatedAt: new Date()
     };
-    mockUsers.push(newUser);
-    return newUser;
-  },
-  // 更新模拟分析状态
-  updateMockAnalysisStatus: (analysisId, status, progress, results) => {
-    const analysis = mockAnalyses.find(a => a.id === analysisId);
-    if (analysis) {
-      analysis.status = status;
-      if (progress !== undefined) analysis.progress = progress;
-      if (results) analysis.results = results;
-      if (status === 'completed') {
-        analysis.completedAt = new Date();
-      }
-    }
-    return analysis;
+    this.mockAnalyses.push(newAnalysis);
+    return newAnalysis;
   }
-};
+
+  // 清除所有模拟数据
+  clearAllMockData() {
+    try {
+      logger.info('正在清除所有模拟数据...');
+      this.mockUsers = [];
+      this.mockStocks = [];
+      this.mockAnalyses = [];
+      this.mockRecommendations = [];
+      this.mockNews = [];
+      logger.info('模拟数据已清除');
+      return true;
+    } catch (error) {
+      logger.error('清除模拟数据时出错:', error.message);
+      return false;
+    }
+  }
+
+  // 重新加载模拟数据
+  reloadMockData() {
+    try {
+      logger.info('正在重新加载模拟数据...');
+      this.clearAllMockData();
+      this.initializeMockData();
+      logger.info('模拟数据已重新加载');
+      return true;
+    } catch (error) {
+      logger.error('重新加载模拟数据时出错:', error.message);
+      return false;
+    }
+  }
+
+  // 获取数据统计信息
+  getDataStats() {
+    return {
+      users: this.mockUsers.length,
+      stocks: this.mockStocks.length,
+      analyses: this.mockAnalyses.length,
+      recommendations: this.mockRecommendations.length,
+      news: this.mockNews.length,
+      lastUpdated: new Date().toISOString()
+    };
+  }
+}
+
+// 创建单例实例
+const mockDataManager = new MockDataManager();
+
+// 导出模拟数据管理实例
+module.exports = mockDataManager;
+
+// 导出MockDataManager类（用于测试或扩展）
+module.exports.MockDataManager = MockDataManager;
+
+// 导出模拟密码匹配函数供外部使用
+module.exports.mockMatchPassword = mockDataManager.mockMatchPassword.bind(mockDataManager);

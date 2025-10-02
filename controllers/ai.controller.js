@@ -569,8 +569,10 @@ async function processAnalysis(analysisId) {
     analysis.progress = 10;
     await analysis.save();
 
-    // 模拟AI分析过程
-    await simulateAnalysisProgress(analysisId);
+    // 启动进度模拟
+    simulateAnalysisProgress(analysisId).catch(error => {
+      console.error('模拟分析进度失败:', error);
+    });
 
     // 获取股票数据
     const stock = await Stock.findOne({ symbol: analysis.stockSymbol });
@@ -578,57 +580,101 @@ async function processAnalysis(analysisId) {
       throw new Error('股票数据不存在');
     }
 
+    // 更新股票数据
+    try {
+      await stockService.updateStockPrice(stock.symbol);
+    } catch (error) {
+      console.error('更新股票价格失败:', error);
+    }
+
     // 生成AI分析结果
     const analysisResult = generateAIResult(stock, analysis);
+    
+    // 验证分析结果结构
+    if (!analysisResult || typeof analysisResult !== 'object') {
+      throw new Error('生成的分析结果无效');
+    }
+
+    // 获取配置的分析成本
+    const analysisCost = getAnalysisCost(analysis.analysisType);
 
     // 更新分析结果
     analysis.status = 'completed';
     analysis.progress = 100;
-    analysis.result = analysisResult.result;
-    analysis.factors = analysisResult.factors;
-    analysis.technicalIndicators = analysisResult.technicalIndicators;
-    analysis.fundamentalAnalysis = analysisResult.fundamentalAnalysis;
-    analysis.sentimentAnalysis = analysisResult.sentimentAnalysis;
-    analysis.marketAnalysis = analysisResult.marketAnalysis;
-    analysis.riskAnalysis = analysisResult.riskAnalysis;
-    analysis.aiExplanation = analysisResult.aiExplanation;
-    analysis.executionTime = {
-      startTime: analysis.createdAt,
-      endTime: Date.now(),
-      duration: Date.now() - analysis.createdAt.getTime()
-    };
-    analysis.cost = {
-      creditsUsed: 10,
-      costInUSD: 0.1
-    };
+    analysis.completedAt = new Date();
+    
+    // 安全地更新分析结果字段
+    if (analysisResult.result) analysis.result = analysisResult.result;
+    if (analysisResult.factors) analysis.factors = analysisResult.factors;
+    if (analysisResult.technicalIndicators) analysis.technicalIndicators = analysisResult.technicalIndicators;
+    if (analysisResult.fundamentalAnalysis) analysis.fundamentalAnalysis = analysisResult.fundamentalAnalysis;
+    if (analysisResult.sentimentAnalysis) analysis.sentimentAnalysis = analysisResult.sentimentAnalysis;
+    if (analysisResult.marketAnalysis) analysis.marketAnalysis = analysisResult.marketAnalysis;
+    if (analysisResult.riskAnalysis) analysis.riskAnalysis = analysisResult.riskAnalysis;
+    if (analysisResult.aiExplanation) analysis.aiExplanation = analysisResult.aiExplanation;
+    
+    // 更新成本信息
+    analysis.creditsUsed = analysisCost.credits;
+    analysis.costInUSD = analysisCost.usd;
 
-    await analysis.save();
+    // 尝试保存分析结果，增加错误处理
+    try {
+      await analysis.save();
+    } catch (saveError) {
+      console.error('保存分析结果失败:', saveError);
+      throw new Error('保存分析结果失败');
+    }
 
     // 将AI评级添加到股票数据
     if (analysisResult.result) {
-      await stock.addAiRating({
-        rating: analysisResult.result.overallRating,
-        recommendation: analysisResult.result.recommendation,
-        confidence: analysisResult.result.confidenceLevel,
-        factors: {
-          fundamental: analysisResult.factors.fundamentalScore,
-          technical: analysisResult.factors.technicalScore,
-          market: analysisResult.factors.marketScore,
-          sentiment: analysisResult.factors.sentimentScore
-        },
-        analysis: analysisResult.aiExplanation.reasoning
-      });
+      try {
+        await stock.addAiRating({
+          rating: analysisResult.result.overallRating,
+          recommendation: analysisResult.result.recommendation,
+          confidence: analysisResult.result.confidenceLevel,
+          factors: {
+            fundamental: analysisResult.factors?.fundamentalScore || 0,
+            technical: analysisResult.factors?.technicalScore || 0,
+            market: analysisResult.factors?.marketScore || 0,
+            sentiment: analysisResult.factors?.sentimentScore || 0
+          },
+          analysis: analysisResult.aiExplanation?.reasoning || ''
+        });
+      } catch (addRatingError) {
+        console.error('添加AI评级到股票失败:', addRatingError);
+        // 这里不抛出异常，因为这不是关键流程
+      }
     }
 
   } catch (error) {
     console.error('处理分析任务错误:', error);
-    const analysis = await Analysis.findById(analysisId);
-    if (analysis) {
-      analysis.status = 'failed';
-      analysis.progress = 0;
-      await analysis.save();
+    // 错误处理中再次捕获可能的异常
+    try {
+      const analysis = await Analysis.findById(analysisId);
+      if (analysis) {
+        analysis.status = 'failed';
+        analysis.progress = 0;
+        analysis.error = error.message;
+        await analysis.save();
+      }
+    } catch (updateError) {
+      console.error('更新分析任务状态失败:', updateError);
     }
   }
+}
+
+// 获取分析成本配置
+function getAnalysisCost(analysisType) {
+  // 从配置中获取，而非硬编码
+  const costConfig = {
+    'comprehensive': { credits: 15, usd: 0.15 },
+    'technical': { credits: 10, usd: 0.10 },
+    'fundamental': { credits: 12, usd: 0.12 },
+    'sentiment': { credits: 8, usd: 0.08 },
+    'default': { credits: 10, usd: 0.10 }
+  };
+  
+  return costConfig[analysisType] || costConfig['default'];
 }
 
 // 模拟分析进度
