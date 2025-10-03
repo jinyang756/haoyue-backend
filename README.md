@@ -422,6 +422,23 @@ sudo certbot --nginx -d api.haoyuequant.com
 - AI分析结果展示界面
 - 响应式设计适配各种设备
 
+## 开发工具
+
+### adminMongo 集成
+
+在开发环境中，项目已集成 adminMongo 用于数据库管理：
+
+- 访问地址: http://localhost:5001/admin/mongo
+- 配置文件: [adminMongo 配置](../adminMongo/config/app.json)
+- 数据库连接配置: [adminMongo 连接配置](../adminMongo/config/config.json)
+
+### MongoDB Compass
+
+推荐使用 MongoDB Compass 进行数据库可视化管理：
+
+- 下载地址: [MongoDB Compass](https://www.mongodb.com/try/download/compass)
+- 连接字符串: `mongodb://localhost:27017/haoyue_dev`
+
 ## 文档规范
 
 所有 Markdown 文档都应遵循项目规范，详情请参见 [Markdown 格式规范指南](docs/MARKDOWN_STYLE_GUIDE.md)。

@@ -56,7 +56,8 @@ npm start
 ### 安装方式二：集成到后端服务
 
 在开发环境中，adminMongo 已经集成到后端服务中，可以通过以下 URL 访问：
-- 开发环境: http://localhost:5001/admin/mongo
+
+- 开发环境: <http://localhost:5001/admin/mongo>
 
 ### 配置连接
 
@@ -67,7 +68,9 @@ npm start
 {
   "app": {
     "host": "localhost",
-    "port": 1234,
+    "port": 1235,
+    "locale": "zh-cn",
+    "context": "admin/mongo",
     "cookieSecret": "haoyue-admin-secret",
     "sessionSecret": "haoyue-session-secret"
   },
@@ -81,7 +84,7 @@ npm start
 ```
 
 3. 重启 adminMongo 服务
-4. 访问 <http://localhost:1234> 或 <http://localhost:5001/admin/mongo>（集成模式）
+4. 访问 <http://localhost:1235> 或 <http://localhost:5001/admin/mongo>（集成模式）
 
 ## 连接测试
 
