@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { check } = require('express-validator');
-const aiController = require('../controllers/ai.controller');
+const EnhancedAIController = require('../controllers/enhanced-ai.controller');
 const { protect, validateRequest } = require('../middleware/auth');
 
 /**
@@ -166,7 +166,7 @@ router.post(
     check('stockSymbol', '请提供股票代码').not().isEmpty(),
     check('analysisType')
       .optional()
-      .isIn(['fundamental', 'technical', 'sentiment', 'comprehensive', 'custom']),
+      .isIn(['fundamental', 'technical', 'sentiment', 'comprehensive', 'custom', 'enhanced']),
     check('timeRange')
       .optional()
       .isIn(['1d', '1w', '1m', '3m', '6m', '1y', '2y', '5y', 'max']),
@@ -175,7 +175,7 @@ router.post(
       .isIn(['low', 'medium', 'high', 'urgent'])
   ],
   validateRequest,
-  aiController.createAnalysis
+  EnhancedAIController.createAnalysis
 );
 
 /**
@@ -238,7 +238,7 @@ router.post(
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // 获取分析任务列表
-router.get('/', protect, aiController.getAnalysisList);
+router.get('/', protect, EnhancedAIController.getAnalysisList);
 
 /**
  * @swagger
@@ -276,7 +276,7 @@ router.get('/', protect, aiController.getAnalysisList);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // 获取分析任务详情
-router.get('/:id', protect, aiController.getAnalysisById);
+router.get('/:id', protect, EnhancedAIController.getAnalysisById);
 
 /**
  * @swagger
@@ -320,7 +320,7 @@ router.get('/:id', protect, aiController.getAnalysisById);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // 取消分析任务
-router.put('/:id/cancel', protect, aiController.cancelAnalysis);
+router.put('/:id/cancel', protect, EnhancedAIController.cancelAnalysis);
 
 /**
  * @swagger
@@ -345,7 +345,7 @@ router.put('/:id/cancel', protect, aiController.cancelAnalysis);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 // 获取分析统计
-router.get('/stats', protect, aiController.getAnalysisStats);
+router.get('/stats', protect, EnhancedAIController.getAnalysisStats);
 
 /**
  * @swagger
@@ -406,7 +406,7 @@ router.put(
     check('isFavorite', '请提供收藏状态').isBoolean()
   ],
   validateRequest,
-  aiController.toggleFavorite
+  EnhancedAIController.toggleFavorite
 );
 
 /**
@@ -484,7 +484,7 @@ router.post(
       .isIn(['view', 'edit', 'comment'])
   ],
   validateRequest,
-  aiController.shareAnalysis
+  EnhancedAIController.shareAnalysis
 );
 
 /**
@@ -542,7 +542,7 @@ router.post(
     check('note', '请提供笔记内容').not().isEmpty()
   ],
   validateRequest,
-  aiController.addAnalysisNote
+  EnhancedAIController.addAnalysisNote
 );
 
 module.exports = router;

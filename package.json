@@ -15,6 +15,7 @@
     "generate-data": "node scripts/generate-stock-data.js",
     "init-data": "node scripts/init-stock-data.js",
     "init-china-data": "node scripts/init-china-stock-data.js",
+    "init-test-data": "node scripts/init-test-data.js",
     "test-db": "node scripts/test-mongodb-connection.js",
     "test-swagger-vercel": "node scripts/test-swagger-vercel.js",
     "changelog": "echo 请查看项目根目录下的 CHANGELOG.md 文件获取变更历史"

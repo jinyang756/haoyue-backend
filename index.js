@@ -249,9 +249,24 @@ app.use('/api/subscriptions', (req, res, next) => {
   logPerformance('Subscription路由', () => subscriptionRoutes(req, res, next)).catch(next);
 });
 
-app.use('/api/contents', (req, res, next) => {
-  logPerformance('Content路由', () => contentRoutes(req, res, next)).catch(next);
-});
+app.use('/api/contents', contentRoutes);
+
+// 集成 adminMongo - 用于数据库管理
+if (process.env.NODE_ENV !== 'production') {
+  try {
+    // 动态导入 adminMongo 应用
+    const adminMongoPath = path.join(__dirname, '..', 'adminMongo');
+    if (fs.existsSync(adminMongoPath)) {
+      const adminMongoApp = require(adminMongoPath + '/app.js');
+      app.use('/admin/mongo', adminMongoApp);
+      logger.info('adminMongo 已集成到 /admin/mongo 路径');
+    } else {
+      logger.warn('adminMongo 目录未找到，跳过集成');
+    }
+  } catch (error) {
+    logger.error('adminMongo 集成失败:', error.message);
+  }
+}
 
 // 根目录路由
 app.get('/', (req, res) => {
@@ -259,7 +274,8 @@ app.get('/', (req, res) => {
     message: '欢迎使用皓月量化智能引擎API服务',
     version: process.env.APP_VERSION || '1.0.0',
     documentation: '/api/docs',
-    health: '/health'
+    health: '/health',
+    adminMongo: process.env.NODE_ENV !== 'production' ? '/admin/mongo' : undefined
   });
 });
 
@@ -335,6 +351,9 @@ if (process.env.VERCEL !== '1') {
     logger.info(`环境: ${process.env.NODE_ENV || 'development'}`);
     logger.info(`端口: ${PORT}`);
     logger.info(`文档: http://localhost:${PORT}/api/docs`);
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info(`adminMongo: http://localhost:${PORT}/admin/mongo`);
+    }
   });
 }
 

@@ -1,106 +1,92 @@
 #!/usr/bin/env node
 
 /**
- * MongoDB连接测试脚本
- * 用于测试MongoDB连接配置是否正确
+ * MongoDB 连接测试脚本
+ * 用于验证 MongoDB Compass 和 adminMongo 的连接配置
  */
 
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
+const { MongoClient, ServerApiVersion } = require('mongodb');
 const { logger } = require('../utils/logger');
 
-// 加载环境变量
-dotenv.config();
-
-// MongoDB连接配置
-const mongoUri = process.env.MONGODB_URI || 
-                process.env.MONGO_URI || 
-                process.env.MongoDB_MONGODB_URI || 
-                'mongodb://localhost:27017/haoyue';
-
-const mongooseOptions = {
-  serverSelectionTimeoutMS: 5000,
-  socketTimeoutMS: 45000,
-  family: 4,
-  autoIndex: process.env.NODE_ENV !== 'production',
-  connectTimeoutMS: 10000,
-  maxPoolSize: 10,
-  minPoolSize: 2,
-  heartbeatFrequencyMS: 15000,
-  appName: 'haoyue-backend'
+// 从环境变量获取 MongoDB URI
+const getMongoUri = () => {
+  return process.env.MONGODB_URI || 
+         process.env.MONGO_URI || 
+         'mongodb://localhost:27017/haoyue_dev';
 };
 
-/**
- * 测试MongoDB连接
- */
-async function testMongoDBConnection() {
+// MongoDB 客户端配置
+const mongoClientOptions = {
+  serverApi: ServerApiVersion.v1,
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  connectTimeoutMS: 10000
+};
+
+async function testConnection() {
+  let client;
+  
   try {
-    logger.info('开始测试MongoDB连接...');
-    logger.info(`连接字符串: ${mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//[username]:[password]@')}`);
+    const uri = getMongoUri();
+    console.log('🧪 测试 MongoDB 连接...');
+    console.log(`🔗 连接字符串: ${uri}`);
     
-    // 尝试连接
-    const conn = await mongoose.connect(mongoUri, mongooseOptions);
+    // 创建客户端并连接
+    client = new MongoClient(uri, mongoClientOptions);
+    await client.connect();
     
-    logger.info('MongoDB连接成功!');
-    logger.info(`数据库主机: ${conn.connection.host}`);
-    logger.info(`数据库名称: ${conn.connection.name}`);
+    console.log('✅ MongoDB 连接成功!');
     
-    // 测试基本操作
-    try {
-      // 创建测试集合
-      const testSchema = new mongoose.Schema({
-        name: String,
-        createdAt: { type: Date, default: Date.now }
-      });
-      
-      const TestModel = mongoose.model('TestConnection', testSchema);
-      
-      // 插入测试文档
-      const testDoc = new TestModel({ name: 'Connection Test' });
-      await testDoc.save();
-      logger.info('插入测试文档成功');
-      
-      // 查询测试文档
-      const foundDoc = await TestModel.findOne({ name: 'Connection Test' });
-      if (foundDoc) {
-        logger.info('查询测试文档成功');
-      } else {
-        logger.warn('查询测试文档失败');
-      }
-      
-      // 删除测试文档
-      await TestModel.deleteOne({ name: 'Connection Test' });
-      logger.info('删除测试文档成功');
-      
-      // 删除测试模型
-      await TestModel.collection.drop();
-      logger.info('清理测试集合成功');
-      
-    } catch (opError) {
-      logger.warn('数据库操作测试失败:', opError.message);
-    }
+    // 获取数据库信息
+    const db = client.db();
+    const dbName = db.databaseName || 'default';
+    console.log(`📂 数据库名称: ${dbName}`);
     
-    // 断开连接
-    await mongoose.connection.close();
-    logger.info('MongoDB连接测试完成');
+    // 列出所有集合
+    const collections = await db.listCollections().toArray();
+    console.log(`📋 集合列表 (${collections.length} 个):`);
+    collections.forEach((collection, index) => {
+      console.log(`   ${index + 1}. ${collection.name}`);
+    });
     
-    process.exit(0);
+    // 获取数据库统计信息
+    const stats = await db.stats();
+    console.log(`📊 数据库统计:`);
+    console.log(`   文档数量: ${stats.objects}`);
+    console.log(`   数据大小: ${(stats.dataSize / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`   存储大小: ${(stats.storageSize / 1024 / 1024).toFixed(2)} MB`);
+    
+    return true;
   } catch (error) {
-    logger.error('MongoDB连接测试失败:', error.message);
+    console.error('❌ MongoDB 连接失败:', error.message);
     
     // 提供故障排除建议
-    logger.info('\n故障排除建议:');
-    logger.info('1. 检查MongoDB连接字符串是否正确');
-    logger.info('2. 确认MongoDB Atlas中的用户权限设置');
-    logger.info('3. 检查网络连接是否正常');
-    logger.info('4. 确认IP地址是否已添加到MongoDB Atlas白名单');
-    logger.info('5. 验证用户名和密码是否正确');
+    console.log('\n💡 故障排除建议:');
+    console.log('1. 检查 MongoDB 服务是否正在运行');
+    console.log('2. 验证连接字符串是否正确');
+    console.log('3. 确认防火墙设置是否允许连接');
+    console.log('4. 检查用户名和密码是否正确');
     
-    process.exit(1);
+    return false;
+  } finally {
+    // 关闭连接
+    if (client) {
+      await client.close();
+      console.log('🔚 连接已关闭');
+    }
   }
 }
 
-// 如果直接运行此脚本，则执行主函数
+// 执行测试
 if (require.main === module) {
-  testMongoDBConnection();
+  testConnection()
+    .then(success => {
+      process.exit(success ? 0 : 1);
+    })
+    .catch(error => {
+      console.error('未处理的错误:', error);
+      process.exit(1);
+    });
 }
+
+module.exports = { testConnection };
