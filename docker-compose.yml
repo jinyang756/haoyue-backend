@@ -37,33 +37,35 @@ services:
       SMTP_PORT: 587
       SMTP_USER: your_email@gmail.com
       SMTP_PASS: your_app_password
-      CORS_ORIGIN: http://localhost:3000
+      CORS_ORIGIN: http://localhost:3000,http://frontend:3000
     volumes:
       - .:/app
       - /app/node_modules
       - ./logs:/app/logs
+      - ../adminMongo:/app/adminMongo
     depends_on:
       - mongodb
     networks:
       - haoyue-network
     command: npm start
 
-  # 前端服务（可选）
+  # 前端服务
   frontend:
-    image: node:18-alpine
+    build: 
+      context: ../haoyue-frontend
     container_name: haoyue-frontend
     restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      REACT_APP_API_URL: http://localhost:5000/api
+      REACT_APP_API_URL: http://api:5000
     volumes:
-      - ./frontend:/app
+      - ../haoyue-frontend:/app
       - /app/node_modules
     working_dir: /app
-    command: sh -c "echo '前端服务容器运行中' && tail -f /dev/null"
     networks:
       - haoyue-network
+    command: npm start
 
   # MongoDB管理界面
   mongo-express:

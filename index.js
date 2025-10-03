@@ -268,6 +268,16 @@ if (process.env.NODE_ENV !== 'production') {
   }
 }
 
+
+// adminMongo 集成测试路由
+app.get('/admin/mongo/test', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'adminMongo 集成测试成功',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // 根目录路由
 app.get('/', (req, res) => {
   res.json({

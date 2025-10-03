@@ -17,6 +17,10 @@
     "init-china-data": "node scripts/init-china-stock-data.js",
     "init-test-data": "node scripts/init-test-data.js",
     "test-db": "node scripts/test-mongodb-connection.js",
+    "test-adminmongo": "node scripts/test-adminmongo.js",
+    "test-adminmongo-docker": "node scripts/test-adminmongo-docker.js",
+    "fix-adminmongo": "node scripts/fix-adminmongo.js",
+    "verify-adminmongo": "node scripts/verify-adminmongo.js",
     "test-swagger-vercel": "node scripts/test-swagger-vercel.js",
     "changelog": "cat CHANGELOG.md"
   },
