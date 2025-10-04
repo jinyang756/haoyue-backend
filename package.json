@@ -22,7 +22,8 @@
     "fix-adminmongo": "node scripts/fix-adminmongo.js",
     "verify-adminmongo": "node scripts/verify-adminmongo.js",
     "test-swagger-vercel": "node scripts/test-swagger-vercel.js",
-    "changelog": "cat ../CHANGELOG.md"
+    "changelog": "cat ../CHANGELOG.md",
+    "deploy:check": "node scripts/deploy-check.js"
   },
   "keywords": [
     "stock",

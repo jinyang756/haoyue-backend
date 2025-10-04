@@ -211,6 +211,20 @@ docker run -d -p 5001:5001 --env-file .env --name haoyue-api haoyue-api
    - 其他必要的环境变量 (参考.env.example文件)
 4. 点击Deploy按钮开始部署
 
+详细部署文件清单请参考 [DEPLOYMENT_CHECKLIST.md](docs/DEPLOYMENT_CHECKLIST.md)
+
+## 运维指南
+
+详细的运维指南请参考 [OPERATION_GUIDE.md](docs/OPERATION_GUIDE.md)，包含以下内容：
+
+- 部署流程
+- 监控和日志
+- 常见问题处理
+- 性能优化
+- 安全配置
+- 备份和恢复
+- 版本管理
+
 ## API文档
 
 项目已集成Swagger文档，启动服务后可访问 `http://localhost:5001/api/docs` 查看完整的API文档。以下是主要API接口概览：
@@ -397,52 +411,3 @@ sudo certbot --nginx -d api.haoyuequant.com
 1. Fork项目
 2. 创建功能分支
 3. 提交代码
-4. 创建Pull Request
-
-## 变更日志
-
-项目的变更历史记录在根目录的 [CHANGELOG.md](../CHANGELOG.md) 文件中。请在提交PR时更新此文件，记录重要的变更。
-
-## 数据可视化
-
-项目使用 MongoDB Charts 进行数据可视化展示：
-
-- [公开仪表板](https://charts.mongodb.com/charts-haoyue-ejjgvho/public/dashboards/68de15da-809c-406a-8ad5-92c828f50dcb) - 展示公开的股票数据和分析结果
-- [私有仪表板](https://charts.mongodb.com/charts-haoyue-ejjgvho/dashboards/68de15da-809c-406a-8ad5-92c828f50dcb) - 包含详细的系统数据和管理功能（仅限授权用户访问）
-
-详细信息请参见 [MONGODB_CHARTS.md](../MONGODB_CHARTS.md) 文件。
-
-## 前端集成
-
-前端项目部署在Netlify (zhengyutouzi.com)，通过API与后端服务通信。前端项目包含：
-
-- 专业的首页展示页面
-- 用户认证和权限管理界面
-- 股票数据展示和分析界面
-- AI分析结果展示界面
-- 响应式设计适配各种设备
-
-## 开发工具
-
-### adminMongo 集成
-
-在开发环境中，项目已集成 adminMongo 用于数据库管理：
-
-- 访问地址: http://localhost:5001/admin/mongo
-- 配置文件: [adminMongo 配置](../adminMongo/config/app.json)
-- 数据库连接配置: [adminMongo 连接配置](../adminMongo/config/config.json)
-
-### MongoDB Compass
-
-推荐使用 MongoDB Compass 进行数据库可视化管理：
-
-- 下载地址: [MongoDB Compass](https://www.mongodb.com/try/download/compass)
-- 连接字符串: `mongodb://localhost:27017/haoyue_dev`
-
-## 文档规范
-
-所有 Markdown 文档都应遵循项目规范，详情请参见 [Markdown 格式规范指南](docs/MARKDOWN_STYLE_GUIDE.md)。
-
-## 许可证
-
-本项目采用MIT许可证
