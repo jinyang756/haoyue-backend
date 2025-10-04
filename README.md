@@ -401,7 +401,7 @@ sudo certbot --nginx -d api.haoyuequant.com
 
 ## 变更日志
 
-项目的变更历史记录在 [CHANGELOG.md](../CHANGELOG.md) 文件中。请在提交PR时更新此文件，记录重要的变更。
+项目的变更历史记录在根目录的 [CHANGELOG.md](../CHANGELOG.md) 文件中。请在提交PR时更新此文件，记录重要的变更。
 
 ## 数据可视化
 

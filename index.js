@@ -138,6 +138,7 @@ const recommendationRoutes = require('./routes/recommendation.routes');
 const newsRoutes = require('./routes/news.routes');
 const subscriptionRoutes = require('./routes/subscription.routes');
 const contentRoutes = require('./routes/content.routes');
+const alphaBotRoutes = require('./routes/alphaBot.routes');
 
 // 配置Swagger文档路由（在Vercel环境中也启用，但使用特殊处理）
 if (process.env.NODE_ENV !== 'production' || process.env.VERCEL === '1') {
@@ -198,6 +199,7 @@ app.get('/health', (req, res) => {
       recommendations: '/api/recommendations',
       news: '/api/news',
       subscriptions: '/api/subscriptions',
+      alphaBot: '/api/alphaBot',
       contents: '/api/contents',
       docs: '/api/docs'
     }
@@ -250,6 +252,16 @@ app.use('/api/subscriptions', (req, res, next) => {
 });
 
 app.use('/api/contents', contentRoutes);
+app.use('/api/alphaBot', alphaBotRoutes);
+
+// adminMongo 集成测试路由
+app.get('/admin/mongo/test', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'adminMongo 集成测试成功',
+    timestamp: new Date().toISOString()
+  });
+});
 
 // 集成 adminMongo - 用于数据库管理
 if (process.env.NODE_ENV !== 'production') {
@@ -267,16 +279,6 @@ if (process.env.NODE_ENV !== 'production') {
     logger.error('adminMongo 集成失败:', error.message);
   }
 }
-
-
-// adminMongo 集成测试路由
-app.get('/admin/mongo/test', (req, res) => {
-  res.json({
-    status: 'success',
-    message: 'adminMongo 集成测试成功',
-    timestamp: new Date().toISOString()
-  });
-});
 
 // 根目录路由
 app.get('/', (req, res) => {
