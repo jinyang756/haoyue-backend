@@ -7,66 +7,6 @@ const axios = require('axios');
 const { spawn } = require('child_process');
 const { isMongoDBConnected } = require('../config/db');
 
-// 模拟数据
-const mockStocks = [
-  { symbol: 'AAPL', name: '苹果公司', price: 187.23, change: 1.23, changePercent: 0.66 },
-  { symbol: 'MSFT', name: '微软公司', price: 410.56, change: -2.34, changePercent: -0.57 },
-  { symbol: 'TSLA', name: '特斯拉', price: 232.87, change: 5.67, changePercent: 2.5 },
-  { symbol: 'AMZN', name: '亚马逊', price: 198.45, change: 0.89, changePercent: 0.45 },
-  { symbol: 'GOOGL', name: '谷歌', price: 134.78, change: -1.23, changePercent: -0.91 }
-];
-
-const mockAnalyses = [
-  {
-    id: '1',
-    stockSymbol: 'AAPL',
-    stockName: '苹果公司',
-    analysisType: 'comprehensive',
-    timeRange: '1y',
-    status: 'completed',
-    progress: 100,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    completedAt: new Date(),
-    results: {
-      overallScore: 85,
-      recommendation: '买入',
-      technicalScore: 82,
-      fundamentalScore: 88,
-      riskLevel: '中等',
-      priceTarget: 205.00
-    }
-  },
-  {
-    id: '2',
-    stockSymbol: 'MSFT',
-    stockName: '微软公司',
-    analysisType: 'technical',
-    timeRange: '6m',
-    status: 'in-progress',
-    progress: 65,
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-  },
-  {
-    id: '3',
-    stockSymbol: 'TSLA',
-    stockName: '特斯拉',
-    analysisType: 'fundamental',
-    timeRange: '1y',
-    status: 'completed',
-    progress: 100,
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
-    completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    results: {
-      overallScore: 72,
-      recommendation: '持有',
-      technicalScore: 78,
-      fundamentalScore: 68,
-      riskLevel: '高',
-      priceTarget: 250.00
-    }
-  }
-];
-
 // MongoDB连接状态检查已从db.js导入
 
 // 创建AI分析任务
@@ -84,40 +24,14 @@ exports.createAnalysis = async (req, res) => {
       priority = 'medium'
     } = req.body;
 
-    // 如果MongoDB未连接，返回模拟数据
+    // 验证MongoDB连接状态
     if (!isMongoDBConnected()) {
-      const mockStock = mockStocks.find(s => s.symbol === stockSymbol.toUpperCase());
-      
-      if (!mockStock) {
-        return res.status(404).json({
-          message: '股票不存在或未激活'
-        });
-      }
-
-      // 模拟创建分析任务
-      const mockAnalysis = {
-        id: Math.random().toString(36).substring(2, 15),
-        stockSymbol: mockStock.symbol,
-        stockName: mockStock.name,
-        analysisType,
-        timeRange,
-        status: 'pending',
-        progress: 0,
-        createdAt: new Date()
-      };
-
-      // 将模拟任务添加到模拟数据列表
-      mockAnalyses.unshift(mockAnalysis);
-
-      return res.status(201).json({
-        success: true,
-        message: 'AI分析任务已创建(模拟数据)',
-        analysis: mockAnalysis,
-        mongodbStatus: 'not connected'
+      return res.status(503).json({
+        success: false,
+        message: '数据库连接不可用'
       });
     }
 
-    // 原始逻辑 - MongoDB连接时执行
     // 验证股票是否存在
     const stock = await Stock.findOne({
       symbol: stockSymbol.toUpperCase(),
@@ -166,36 +80,6 @@ exports.createAnalysis = async (req, res) => {
   } catch (error) {
     console.error('创建AI分析任务错误:', error);
     
-    // 如果是数据库错误，返回模拟数据
-    if (error.name === 'MongoError' || error.name === 'MongooseError') {
-      const mockStock = mockStocks.find(s => s.symbol === req.body.stockSymbol?.toUpperCase());
-      
-      if (!mockStock) {
-        return res.status(404).json({
-          message: '股票不存在或未激活'
-        });
-      }
-
-      // 模拟创建分析任务
-      const mockAnalysis = {
-        id: Math.random().toString(36).substring(2, 15),
-        stockSymbol: mockStock.symbol,
-        stockName: mockStock.name,
-        analysisType: req.body.analysisType || 'comprehensive',
-        timeRange: req.body.timeRange || '1y',
-        status: 'pending',
-        progress: 0,
-        createdAt: new Date()
-      };
-
-      return res.status(201).json({
-        success: true,
-        message: 'AI分析任务已创建(模拟数据)',
-        analysis: mockAnalysis,
-        mongodbStatus: 'error'
-      });
-    }
-
     res.status(500).json({
       message: '服务器错误',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -216,48 +100,14 @@ exports.getAnalysisList = async (req, res) => {
       order = 'desc'
     } = req.query;
 
-    // 如果MongoDB未连接，返回模拟数据
+    // 验证MongoDB连接状态
     if (!isMongoDBConnected()) {
-      let filteredMockAnalyses = [...mockAnalyses];
-      
-      // 应用过滤条件
-      if (status) {
-        filteredMockAnalyses = filteredMockAnalyses.filter(a => a.status === status);
-      }
-      
-      if (analysisType) {
-        filteredMockAnalyses = filteredMockAnalyses.filter(a => a.analysisType === analysisType);
-      }
-      
-      if (stockSymbol) {
-        filteredMockAnalyses = filteredMockAnalyses.filter(a => 
-          a.stockSymbol.toLowerCase() === stockSymbol.toLowerCase()
-        );
-      }
-      
-      // 应用排序
-      filteredMockAnalyses.sort((a, b) => {
-        const aValue = a[sort] || 0;
-        const bValue = b[sort] || 0;
-        return order === 'desc' ? bValue - aValue : aValue - bValue;
-      });
-      
-      // 应用分页
-      const startIndex = (page - 1) * limit;
-      const paginatedMockAnalyses = filteredMockAnalyses.slice(startIndex, startIndex + parseInt(limit));
-      
-      return res.status(200).json({
-        success: true,
-        message: '分析任务列表获取成功(模拟数据)',
-        analyses: paginatedMockAnalyses,
-        total: filteredMockAnalyses.length,
-        page: parseInt(page),
-        pages: Math.ceil(filteredMockAnalyses.length / limit),
-        mongodbStatus: 'not connected'
+      return res.status(503).json({
+        success: false,
+        message: '数据库连接不可用'
       });
     }
 
-    // 原始逻辑 - MongoDB连接时执行
     // 构建查询条件
     const query = { userId: req.user.id };
 

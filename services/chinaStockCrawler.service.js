@@ -258,35 +258,19 @@ class ChinaStockCrawlerService {
 
   // 获取指定交易所的股票列表
   async getExchangeStockList(exchange) {
-    // 简化实现，实际需要根据数据源API的具体格式调整
-    // 这里使用新浪财经API作为示例
-    const url = `https://hq.sinajs.cn/list=sh000001,sz399001`;
-    
+    // 从数据库获取股票列表
     try {
-      const response = await axios.get(url);
-      // 实际应用中需要解析完整的股票列表
-      // 这里返回模拟数据作为示例
-      const mockStocks = [];
+      const stocks = await Stock.find({
+        exchange: exchange,
+        isActive: true
+      }, { symbol: 1, name: 1, exchange: 1, sector: 1, industry: 1, _id: 0 });
       
-      if (exchange === A股交易所.上证) {
-        mockStocks.push(
-          { symbol: '600000', name: '浦发银行', exchange: A股交易所.上证, sector: '银行', industry: '银行业' },
-          { symbol: '600036', name: '招商银行', exchange: A股交易所.上证, sector: '银行', industry: '银行业' },
-          { symbol: '601318', name: '中国平安', exchange: A股交易所.上证, sector: '保险', industry: '保险业' },
-          { symbol: '601857', name: '中国石油', exchange: A股交易所.上证, sector: '能源', industry: '石油开采' },
-          { symbol: '600519', name: '贵州茅台', exchange: A股交易所.上证, sector: '消费', industry: '酒类制造' }
-        );
-      } else if (exchange === A股交易所.深证) {
-        mockStocks.push(
-          { symbol: '000001', name: '平安银行', exchange: A股交易所.深证, sector: '银行', industry: '银行业' },
-          { symbol: '000858', name: '五粮液', exchange: A股交易所.深证, sector: '消费', industry: '酒类制造' },
-          { symbol: '002415', name: '海康威视', exchange: A股交易所.深证, sector: '科技', industry: '电子设备' },
-          { symbol: '300750', name: '宁德时代', exchange: A股交易所.深证, sector: '新能源', industry: '电池制造' },
-          { symbol: '000333', name: '美的集团', exchange: A股交易所.深证, sector: '家电', industry: '家用电器' }
-        );
+      if (!stocks || stocks.length === 0) {
+        logger.warn(`数据库中没有找到${exchange}的股票列表`);
+        throw new Error(`数据库中没有找到${exchange}的股票列表`);
       }
       
-      return mockStocks;
+      return stocks;
     } catch (error) {
       logger.error(`获取${exchange}股票列表失败:`, error.message);
       throw error;
@@ -302,30 +286,31 @@ class ChinaStockCrawlerService {
     }
 
     try {
-      // 简化实现，实际需要根据数据源API的具体格式调整
-      // 这里返回模拟数据作为示例
-      const mockHistoricalData = [];
-      const start = new Date(startDate);
-      const end = new Date(endDate);
+      // 从数据库获取历史数据
+      const historicalData = await StockPriceHistory.find({
+        symbol: symbol,
+        exchange: exchange,
+        date: { $gte: startDate, $lte: endDate }
+      }).sort({ date: 1 });
       
-      // 生成模拟的历史数据
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        // 跳过周末
-        if (d.getDay() === 0 || d.getDay() === 6) continue;
-        
-        mockHistoricalData.push({
-          date: d.toISOString().split('T')[0],
-          open: parseFloat((Math.random() * 10 + 10).toFixed(2)),
-          high: parseFloat((Math.random() * 2 + 11).toFixed(2)),
-          low: parseFloat((Math.random() * 2 + 9).toFixed(2)),
-          close: parseFloat((Math.random() * 10 + 10).toFixed(2)),
-          volume: parseInt(Math.random() * 1000000)
-        });
+      if (!historicalData || historicalData.length === 0) {
+        logger.warn(`数据库中没有找到${symbol}在${startDate}至${endDate}期间的历史数据`);
+        throw new Error(`没有找到历史数据`);
       }
+      
+      // 格式化数据
+      const formattedData = historicalData.map(record => ({
+        date: record.date,
+        open: record.open,
+        high: record.high,
+        low: record.low,
+        close: record.close,
+        volume: record.volume
+      }));
 
       // 缓存数据
-      this.setCachedData(cacheKey, mockHistoricalData, CACHE.HISTORICAL_DATA);
-      return mockHistoricalData;
+      this.setCachedData(cacheKey, formattedData, CACHE.HISTORICAL_DATA);
+      return formattedData;
     } catch (error) {
       logger.error(`获取A股股票历史数据失败 (${symbol}):`, error.message);
       throw error;
@@ -341,29 +326,45 @@ class ChinaStockCrawlerService {
     }
 
     try {
-      // 简化实现，实际需要根据数据源API的具体格式调整
-      // 这里返回模拟数据作为示例
-      const mockFundamentalData = {
-        symbol,
-        name: '模拟股票',
-        exchange,
-        marketCap: parseFloat((Math.random() * 500000 + 100000).toFixed(2)), // 市值(万元)
-        peRatio: parseFloat((Math.random() * 30 + 5).toFixed(2)), // 市盈率
-        pbRatio: parseFloat((Math.random() * 5 + 0.5).toFixed(2)), // 市净率
-        psRatio: parseFloat((Math.random() * 10 + 1).toFixed(2)), // 市销率
-        roe: parseFloat((Math.random() * 20 + 5).toFixed(2)), // 净资产收益率(%)
-        roa: parseFloat((Math.random() * 10 + 2).toFixed(2)), // 资产收益率(%)
-        debtEquityRatio: parseFloat((Math.random() * 2 + 0.2).toFixed(2)), // 资产负债率
-        revenueGrowth: parseFloat((Math.random() * 50 - 10).toFixed(2)), // 收入增长率(%)
-        earningsGrowth: parseFloat((Math.random() * 60 - 15).toFixed(2)), // 利润增长率(%)
-        eps: parseFloat((Math.random() * 5 + 0.5).toFixed(2)), // 每股收益(元)
-        dividendYield: parseFloat((Math.random() * 5 + 0.5).toFixed(2)), // 股息率(%)
+      // 从数据库获取基本面数据
+      const stock = await Stock.findOne({
+        symbol: symbol,
+        exchange: exchange
+      });
+      
+      if (!stock) {
+        logger.warn(`数据库中没有找到股票${symbol}的基本面数据`);
+        throw new Error(`没有找到股票数据`);
+      }
+      
+      // 获取最新的财务报告
+      const financialReport = await FinancialReport.findOne({
+        symbol: symbol,
+        exchange: exchange
+      }).sort({ reportDate: -1 });
+      
+      // 构建基本面数据
+      const fundamentalData = {
+        symbol: stock.symbol,
+        name: stock.name,
+        exchange: stock.exchange,
+        marketCap: stock.marketCap || 0,
+        peRatio: stock.peRatio || 0,
+        pbRatio: financialReport ? financialReport.pbRatio : 0,
+        psRatio: financialReport ? financialReport.psRatio : 0,
+        roe: financialReport ? financialReport.roe : 0,
+        roa: financialReport ? financialReport.roa : 0,
+        debtEquityRatio: financialReport ? financialReport.debtEquityRatio : 0,
+        revenueGrowth: financialReport ? financialReport.revenueGrowth : 0,
+        earningsGrowth: financialReport ? financialReport.earningsGrowth : 0,
+        eps: stock.eps || 0,
+        dividendYield: stock.dividendYield || 0,
         timestamp: new Date().toISOString()
       };
 
       // 缓存数据
-      this.setCachedData(cacheKey, mockFundamentalData, CACHE.FUNDAMENTAL_DATA);
-      return mockFundamentalData;
+      this.setCachedData(cacheKey, fundamentalData, CACHE.FUNDAMENTAL_DATA);
+      return fundamentalData;
     } catch (error) {
       logger.error(`获取A股股票基本面数据失败 (${symbol}):`, error.message);
       throw error;

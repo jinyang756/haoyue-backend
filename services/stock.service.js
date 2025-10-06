@@ -1,7 +1,7 @@
 const axios = require('axios');
 const Stock = require('../models/Stock');
 const { logger } = require('../utils/logger');
-const { mockDataManager } = require('../utils/mockDataManager');
+const axios = require('axios');
 
 class StockService {
   /**
@@ -171,19 +171,7 @@ class StockService {
     }
   }
 
-  /**
-   * 获取模拟股票数据（当真实API不可用时）
-   * @param {string} symbol - 股票代码
-   * @returns {Promise<Object>} - 模拟股票数据
-   */
-  async getMockStockData(symbol) {
-    logger.info(`使用模拟数据获取股票信息: ${symbol}`);
-    const mockStock = mockDataManager.getMockStock(symbol);
-    if (!mockStock) {
-      throw new Error(`Mock data not found for stock: ${symbol}`);
-    }
-    return mockStock;
-  }
+
 
   /**
    * 更新股票最新价格
@@ -202,12 +190,7 @@ class StockService {
         }
       } catch (error) {
         logger.warn(`Finnhub failed for ${symbol}, trying Alpha Vantage:`, error.message);
-        try {
-          stockData = await this.getStockDataFromAlphaVantage(symbol);
-        } catch (alphaError) {
-          logger.warn(`Alpha Vantage failed for ${symbol}, using mock data:`, alphaError.message);
-          stockData = await this.getMockStockData(symbol);
-        }
+        stockData = await this.getStockDataFromAlphaVantage(symbol);
       }
 
       // 查找或创建股票记录
@@ -220,9 +203,8 @@ class StockService {
           companyName = companyProfile.name || symbol;
         } catch (error) {
           logger.warn(`Failed to get company profile for ${symbol}:`, error.message);
-          // 使用模拟数据中的名称
-          const mockStock = await this.getMockStockData(symbol);
-          companyName = mockStock.name || symbol;
+          // 使用默认名称
+          companyName = symbol;
         }
         
         stock = new Stock({
@@ -277,21 +259,13 @@ class StockService {
    */
   async getAllStocks() {
     try {
-      // 首先尝试从数据库获取
-      const stocks = await Stock.find({ isActive: true }).limit(100);
-      
-      // 如果数据库中没有股票，使用模拟数据
-      if (stocks.length === 0) {
-        logger.info('数据库中没有股票数据，使用模拟数据');
-        return mockDataManager.getAllMockStocks();
+        // 从数据库获取
+        const stocks = await Stock.find({ isActive: true }).limit(100);
+        return stocks;
+      } catch (error) {
+        logger.error('获取股票列表失败:', error);
+        throw error;
       }
-      
-      return stocks;
-    } catch (error) {
-      logger.error('获取股票列表失败:', error);
-      // 出错时返回模拟数据
-      return mockDataManager.getAllMockStocks();
-    }
   }
 
   /**
@@ -301,27 +275,19 @@ class StockService {
    */
   async searchStocks(query) {
     try {
-      // 首先尝试从数据库搜索
-      const stocks = await Stock.find({
-        $or: [
-          { symbol: { $regex: query, $options: 'i' } },
-          { name: { $regex: query, $options: 'i' } }
-        ],
-        isActive: true
-      }).limit(20);
-      
-      // 如果数据库中没有匹配的股票，使用模拟数据
-      if (stocks.length === 0) {
-        logger.info(`数据库中没有匹配"${query}"的股票，使用模拟数据`);
-        return mockDataManager.searchMockStocks(query);
+        // 从数据库搜索
+        const stocks = await Stock.find({
+          $or: [
+            { symbol: { $regex: query, $options: 'i' } },
+            { name: { $regex: query, $options: 'i' } }
+          ],
+          isActive: true
+        }).limit(20);
+        return stocks;
+      } catch (error) {
+        logger.error(`搜索股票"${query}"失败:`, error);
+        throw error;
       }
-      
-      return stocks;
-    } catch (error) {
-      logger.error(`搜索股票"${query}"失败:`, error);
-      // 出错时返回模拟数据
-      return mockDataManager.searchMockStocks(query);
-    }
   }
 
   /**
@@ -331,21 +297,16 @@ class StockService {
    */
   async getStockDetails(symbol) {
     try {
-      // 首先尝试从数据库获取
-      const stock = await Stock.findOne({ symbol: symbol.toUpperCase() });
-      
-      // 如果数据库中没有股票，使用模拟数据
-      if (!stock) {
-        logger.info(`数据库中没有股票${symbol}，使用模拟数据`);
-        return mockDataManager.getMockStock(symbol);
+        // 从数据库获取
+        const stock = await Stock.findOne({ symbol: symbol.toUpperCase() });
+        if (!stock) {
+          throw new Error(`股票${symbol}不存在`);
+        }
+        return stock;
+      } catch (error) {
+        logger.error(`获取股票${symbol}详情失败:`, error);
+        throw error;
       }
-      
-      return stock;
-    } catch (error) {
-      logger.error(`获取股票${symbol}详情失败:`, error);
-      // 出错时返回模拟数据
-      return mockDataManager.getMockStock(symbol);
-    }
   }
 
   /**
@@ -357,14 +318,7 @@ class StockService {
   async updateHistoricalData(symbol, interval = 'daily') {
     try {
       // 尝试从API获取历史数据
-      let historicalData;
-      try {
-        historicalData = await this.getHistoricalDataFromAlphaVantage(symbol, interval);
-      } catch (error) {
-        logger.warn(`获取${symbol}历史数据失败，使用模拟数据:`, error.message);
-        // 使用模拟历史数据
-        historicalData = mockDataManager.getMockHistoricalData(symbol, interval);
-      }
+      const historicalData = await this.getHistoricalDataFromAlphaVantage(symbol, interval);
 
       // 更新股票的历史数据
       const stock = await Stock.findOne({ symbol: symbol.toUpperCase() });
@@ -404,14 +358,7 @@ class StockService {
   async updateStockNews(symbol) {
     try {
       // 尝试从API获取新闻
-      let newsData;
-      try {
-        newsData = await this.getNewsFromFinnhub(symbol);
-      } catch (error) {
-        logger.warn(`获取${symbol}新闻失败，使用模拟数据:`, error.message);
-        // 使用模拟新闻数据
-        newsData = mockDataManager.getMockNews(symbol);
-      }
+      const newsData = await this.getNewsFromFinnhub(symbol);
 
       // 更新股票的新闻数据
       const stock = await Stock.findOne({ symbol: symbol.toUpperCase() });
@@ -450,14 +397,9 @@ class StockService {
         throw new Error(`Stock not found: ${symbol}`);
       }
 
-      // 如果没有历史数据，使用模拟数据
+      // 如果没有历史数据，无法计算技术指标
       if (!stock.historicalData || stock.historicalData.length === 0) {
-        logger.warn(`股票${symbol}没有历史数据，使用模拟技术指标`);
-        const mockStock = mockDataManager.getMockStock(symbol);
-        if (mockStock && mockStock.technicalIndicators) {
-          stock.technicalIndicators = mockStock.technicalIndicators;
-          await stock.save();
-        }
+        logger.warn(`股票${symbol}没有历史数据，无法计算技术指标`);
         return;
       }
 
@@ -494,15 +436,6 @@ class StockService {
       logger.info(`技术指标计算完成: ${symbol}`);
     } catch (error) {
       logger.error(`计算${symbol}技术指标失败:`, error);
-      // 出错时使用模拟数据
-      const mockStock = mockDataManager.getMockStock(symbol);
-      if (mockStock && mockStock.technicalIndicators) {
-        const stock = await Stock.findOne({ symbol: symbol.toUpperCase() });
-        if (stock) {
-          stock.technicalIndicators = mockStock.technicalIndicators;
-          await stock.save();
-        }
-      }
       throw error;
     }
   }

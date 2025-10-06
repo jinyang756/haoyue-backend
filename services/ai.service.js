@@ -5,7 +5,6 @@ const User = require('../models/User');
 const { logger } = require('../utils/logger');
 const stockService = require('./stock.service');
 const { sendAnalysisReport } = require('../utils/email');
-const { mockDataManager } = require('../utils/mockDataManager');
 
 class AIService {
   /**

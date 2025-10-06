@@ -4,66 +4,7 @@ const Stock = require('../models/Stock');
 const User = require('../models/User');
 const { validationResult } = require('express-validator');
 const { isMongoDBConnected } = require('../config/db');
-
-// 模拟数据
-const mockStocks = [
-  { symbol: 'AAPL', name: '苹果公司', price: 187.23, change: 1.23, changePercent: 0.66 },
-  { symbol: 'MSFT', name: '微软公司', price: 410.56, change: -2.34, changePercent: -0.57 },
-  { symbol: 'TSLA', name: '特斯拉', price: 232.87, change: 5.67, changePercent: 2.5 },
-  { symbol: 'AMZN', name: '亚马逊', price: 198.45, change: 0.89, changePercent: 0.45 },
-  { symbol: 'GOOGL', name: '谷歌', price: 134.78, change: -1.23, changePercent: -0.91 }
-];
-
-const mockAnalyses = [
-  {
-    id: '1',
-    stockSymbol: 'AAPL',
-    stockName: '苹果公司',
-    analysisType: 'comprehensive',
-    timeRange: '1y',
-    status: 'completed',
-    progress: 100,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    completedAt: new Date(),
-    results: {
-      overallScore: 85,
-      recommendation: '买入',
-      technicalScore: 82,
-      fundamentalScore: 88,
-      riskLevel: '中等',
-      priceTarget: 205.00
-    }
-  },
-  {
-    id: '2',
-    stockSymbol: 'MSFT',
-    stockName: '微软公司',
-    analysisType: 'technical',
-    timeRange: '6m',
-    status: 'in-progress',
-    progress: 65,
-    createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000)
-  },
-  {
-    id: '3',
-    stockSymbol: 'TSLA',
-    stockName: '特斯拉',
-    analysisType: 'fundamental',
-    timeRange: '1y',
-    status: 'completed',
-    progress: 100,
-    createdAt: new Date(Date.now() - 48 * 60 * 60 * 1000),
-    completedAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    results: {
-      overallScore: 72,
-      recommendation: '持有',
-      technicalScore: 78,
-      fundamentalScore: 68,
-      riskLevel: '高',
-      priceTarget: 250.00
-    }
-  }
-];
+const logger = require('../config/logger');
 
 // 增强的AI分析控制器
 class EnhancedAIController {
@@ -83,40 +24,15 @@ class EnhancedAIController {
         enhancedFeatures = false // 是否启用增强功能
       } = req.body;
 
-      // 如果MongoDB未连接，返回模拟数据
+      // 检查MongoDB连接状态
       if (!isMongoDBConnected()) {
-        const mockStock = mockStocks.find(s => s.symbol === stockSymbol.toUpperCase());
-        
-        if (!mockStock) {
-          return res.status(404).json({
-            message: '股票不存在或未激活'
-          });
-        }
-
-        // 模拟创建分析任务
-        const mockAnalysis = {
-          id: Math.random().toString(36).substring(2, 15),
-          stockSymbol: mockStock.symbol,
-          stockName: mockStock.name,
-          analysisType,
-          timeRange,
-          status: 'pending',
-          progress: 0,
-          createdAt: new Date()
-        };
-
-        // 将模拟任务添加到模拟数据列表
-        mockAnalyses.unshift(mockAnalysis);
-
-        return res.status(201).json({
-          success: true,
-          message: 'AI分析任务已创建(模拟数据)',
-          analysis: mockAnalysis,
-          mongodbStatus: 'not connected'
+        logger.error('MongoDB未连接，无法创建分析任务');
+        return res.status(503).json({
+          success: false,
+          message: '数据库服务不可用，请稍后再试'
         });
       }
 
-      // 原始逻辑 - MongoDB连接时执行
       // 验证股票是否存在
       const stock = await Stock.findOne({
         symbol: stockSymbol.toUpperCase(),
@@ -164,38 +80,9 @@ class EnhancedAIController {
         }
       });
     } catch (error) {
-      console.error('创建AI分析任务错误:', error);
+      logger.error('创建AI分析任务错误:', error);
       
-      // 如果是数据库错误，返回模拟数据
-      if (error.name === 'MongoError' || error.name === 'MongooseError') {
-        const mockStock = mockStocks.find(s => s.symbol === req.body.stockSymbol?.toUpperCase());
-        
-        if (!mockStock) {
-          return res.status(404).json({
-            message: '股票不存在或未激活'
-          });
-        }
-
-        // 模拟创建分析任务
-        const mockAnalysis = {
-          id: Math.random().toString(36).substring(2, 15),
-          stockSymbol: mockStock.symbol,
-          stockName: mockStock.name,
-          analysisType: req.body.analysisType || 'comprehensive',
-          timeRange: req.body.timeRange || '1y',
-          status: 'pending',
-          progress: 0,
-          createdAt: new Date()
-        };
-
-        return res.status(201).json({
-          success: true,
-          message: 'AI分析任务已创建(模拟数据)',
-          analysis: mockAnalysis,
-          mongodbStatus: 'error'
-        });
-      }
-
+      // 直接返回错误信息，不再使用模拟数据
       res.status(500).json({
         message: '服务器错误',
         error: process.env.NODE_ENV === 'development' ? error.message : undefined
@@ -216,44 +103,12 @@ class EnhancedAIController {
         order = 'desc'
       } = req.query;
 
-      // 如果MongoDB未连接，返回模拟数据
+      // 检查MongoDB连接状态
       if (!isMongoDBConnected()) {
-        let filteredMockAnalyses = [...mockAnalyses];
-        
-        // 应用过滤条件
-        if (status) {
-          filteredMockAnalyses = filteredMockAnalyses.filter(a => a.status === status);
-        }
-        
-        if (analysisType) {
-          filteredMockAnalyses = filteredMockAnalyses.filter(a => a.analysisType === analysisType);
-        }
-        
-        if (stockSymbol) {
-          filteredMockAnalyses = filteredMockAnalyses.filter(a => 
-            a.stockSymbol.toLowerCase() === stockSymbol.toLowerCase()
-          );
-        }
-        
-        // 应用排序
-        filteredMockAnalyses.sort((a, b) => {
-          const aValue = a[sort] || 0;
-          const bValue = b[sort] || 0;
-          return order === 'desc' ? bValue - aValue : aValue - bValue;
-        });
-        
-        // 应用分页
-        const startIndex = (page - 1) * limit;
-        const paginatedMockAnalyses = filteredMockAnalyses.slice(startIndex, startIndex + parseInt(limit));
-        
-        return res.status(200).json({
-          success: true,
-          message: '分析任务列表获取成功(模拟数据)',
-          analyses: paginatedMockAnalyses,
-          total: filteredMockAnalyses.length,
-          page: parseInt(page),
-          pages: Math.ceil(filteredMockAnalyses.length / limit),
-          mongodbStatus: 'not connected'
+        logger.error('MongoDB连接失败，无法获取分析任务列表');
+        return res.status(503).json({
+          success: false,
+          message: '数据库服务不可用，请稍后再试'
         });
       }
 
@@ -433,98 +288,77 @@ class EnhancedAIController {
 
   // 生成标准AI分析结果
   static generateStandardAIResult(stock, analysis) {
-    const baseRating = Math.random() * 4 + 4; // 4-8之间的基础评级
-    const overallRating = Math.round(baseRating * 10) / 10;
-
-    let recommendation;
-    if (overallRating >= 7.5) recommendation = 'strong buy';
-    else if (overallRating >= 6.5) recommendation = 'buy';
-    else if (overallRating >= 4.5) recommendation = 'hold';
-    else if (overallRating >= 3.5) recommendation = 'sell';
-    else recommendation = 'strong sell';
-
-    const confidenceLevel = Math.round(Math.random() * 30 + 60); // 60-90%
-    const targetPrice = stock.latestPrice * (1 + (Math.random() * 0.4 - 0.1)); // ±10-40%
-    const stopLossPrice = stock.latestPrice * (0.85 + Math.random() * 0.1); // 85-95%
-    const upsidePotential = Math.round(((targetPrice - stock.latestPrice) / stock.latestPrice) * 100);
-    const downsideRisk = Math.round(((stock.latestPrice - stopLossPrice) / stock.latestPrice) * 100);
-
+    // 移除模拟数据生成，使用适当的错误处理
+    logger.warn('AI分析功能当前不可用，使用占位数据代替');
+    
+    // 返回基本的占位数据结构，而不是随机生成的模拟数据
     return {
       result: {
-        overallRating,
-        recommendation,
-        confidenceLevel,
-        riskLevel: overallRating >= 7 ? 'low' : overallRating >= 5 ? 'medium' : 'high',
-        targetPrice: Math.round(targetPrice * 100) / 100,
-        stopLossPrice: Math.round(stopLossPrice * 100) / 100,
-        upsidePotential,
-        downsideRisk
+        overallRating: 0,
+        recommendation: 'hold',
+        confidenceLevel: 0,
+        riskLevel: 'medium',
+        targetPrice: stock.latestPrice,
+        stopLossPrice: stock.latestPrice,
+        upsidePotential: 0,
+        downsideRisk: 0
       },
       factors: {
-        fundamentalScore: Math.round(Math.random() * 30 + 60),
-        technicalScore: Math.round(Math.random() * 30 + 60),
-        sentimentScore: Math.round(Math.random() * 30 + 60),
-        marketScore: Math.round(Math.random() * 30 + 60),
-        industryScore: Math.round(Math.random() * 30 + 60)
+        fundamentalScore: 0,
+        technicalScore: 0,
+        sentimentScore: 0,
+        marketScore: 0,
+        industryScore: 0
       },
       technicalIndicators: {
         movingAverages: {
-          ma5: stock.latestPrice * (0.98 + Math.random() * 0.04),
-          ma10: stock.latestPrice * (0.97 + Math.random() * 0.06),
-          ma20: stock.latestPrice * (0.95 + Math.random() * 0.1),
-          ma60: stock.latestPrice * (0.9 + Math.random() * 0.2),
-          ma120: stock.latestPrice * (0.85 + Math.random() * 0.3),
-          ma250: stock.latestPrice * (0.8 + Math.random() * 0.4)
+          ma5: stock.latestPrice,
+          ma10: stock.latestPrice,
+          ma20: stock.latestPrice,
+          ma60: stock.latestPrice,
+          ma120: stock.latestPrice,
+          ma250: stock.latestPrice
         },
         oscillators: {
-          rsi: Math.round(Math.random() * 40 + 30),
-          macd: Math.random() * 2 - 1,
-          signalLine: Math.random() * 2 - 1,
-          stochastic: Math.round(Math.random() * 40 + 30),
-          williamsR: Math.round(Math.random() * -40 - 30)
+          rsi: 50,
+          macd: 0,
+          signalLine: 0,
+          stochastic: 50,
+          williamsR: -50
         }
       },
       fundamentalAnalysis: {
         financialRatios: {
-          peRatio: Math.random() * 20 + 5,
-          pbRatio: Math.random() * 5 + 1,
-          psRatio: Math.random() * 3 + 0.5,
-          dividendYield: Math.random() * 5,
-          roe: Math.random() * 20 + 5,
-          debtEquityRatio: Math.random() * 2
+          peRatio: 0,
+          pbRatio: 0,
+          psRatio: 0,
+          dividendYield: 0,
+          roe: 0,
+          debtEquityRatio: 0
         }
       },
       sentimentAnalysis: {
         newsSentiment: {
-          score: Math.random() * 2 - 1,
-          trend: Math.random() > 0.5 ? 'up' : 'down',
-          articleCount: Math.round(Math.random() * 50 + 10)
+          score: 0,
+          trend: 'neutral',
+          articleCount: 0
         }
       },
       marketAnalysis: {
-        marketTrend: Math.random() > 0.5 ? 'bullish' : 'bearish',
-        sectorPerformance: Math.random() * 20 - 10,
-        industryRank: Math.round(Math.random() * 20 + 1)
+        marketTrend: 'neutral',
+        sectorPerformance: 0,
+        industryRank: 0
       },
       riskAnalysis: {
-        marketRisk: Math.round(Math.random() * 4 + 1),
-        industryRisk: Math.round(Math.random() * 4 + 1),
-        companySpecificRisk: Math.round(Math.random() * 4 + 1),
-        totalRiskScore: Math.round(Math.random() * 4 + 1)
+        marketRisk: 3,
+        industryRisk: 3,
+        companySpecificRisk: 3,
+        totalRiskScore: 3
       },
       aiExplanation: {
-        reasoning: `基于${analysis.analysisType}分析，${stock.name}(${stock.symbol})的整体评分为${overallRating}分，建议${recommendation}。主要考虑因素包括基本面健康度、技术面走势、市场情绪和风险因素。`,
-        keyFactors: [
-          '公司财务状况良好',
-          '技术指标显示买入信号',
-          '市场情绪积极',
-          '估值相对合理'
-        ],
-        confidenceFactors: [
-          '数据来源可靠',
-          '分析模型准确率高',
-          '市场环境稳定'
-        ]
+        reasoning: `AI分析功能暂时不可用，请稍后再试。`,
+        keyFactors: [],
+        confidenceFactors: []
       }
     };
   }
@@ -534,99 +368,94 @@ class EnhancedAIController {
     // 先生成标准结果
     const standardResult = EnhancedAIController.generateStandardAIResult(stock, analysis);
     
-    // 添加增强指标
+    // 添加增强指标（使用合理的默认值，而非随机生成）
     const enhancedIndicators = {
       // 布林带
       bollingerBands: {
-        upper: stock.latestPrice * (1.05 + Math.random() * 0.1),
+        upper: stock.latestPrice * 1.05,
         middle: stock.latestPrice,
-        lower: stock.latestPrice * (0.95 - Math.random() * 0.1),
-        bandwidth: Math.random() * 0.2 + 0.1,
-        percentB: Math.random()
+        lower: stock.latestPrice * 0.95,
+        bandwidth: 0.1,
+        percentB: 0.5
       },
       
       // 能量潮指标 (OBV)
       obv: {
-        current: Math.round(Math.random() * 1000000),
-        trend: Math.random() > 0.5 ? 'up' : 'down',
-        change: Math.round(Math.random() * 100000 - 50000)
+        current: 0,
+        trend: 'neutral',
+        change: 0
       },
       
       // 平均真实波幅 (ATR)
       atr: {
-        value: stock.latestPrice * (0.01 + Math.random() * 0.02),
+        value: stock.latestPrice * 0.015,
         period: 14
       },
       
       // 相对强弱指数 (RSI) 扩展
       extendedRsi: {
         rsi14: standardResult.technicalIndicators.oscillators.rsi,
-        rsi9: Math.round(Math.random() * 40 + 30),
-        rsi25: Math.round(Math.random() * 40 + 30),
-        stochRsi: Math.random()
+        rsi9: 50,
+        rsi25: 50,
+        stochRsi: 0.5
       },
       
       // 艾略特波浪理论
       elliottWave: {
-        wave: Math.floor(Math.random() * 5) + 1,
-        subWave: Math.floor(Math.random() * 3) + 1,
-        trend: Math.random() > 0.5 ? 'bullish' : 'bearish'
+        wave: 0,
+        subWave: 0,
+        trend: 'neutral'
       },
       
       // 斐波那契回撤
       fibonacciRetracement: {
         levels: {
-          '23.6%': stock.latestPrice * (0.764 + Math.random() * 0.1),
-          '38.2%': stock.latestPrice * (0.618 + Math.random() * 0.1),
-          '50.0%': stock.latestPrice * (0.5 + Math.random() * 0.1),
-          '61.8%': stock.latestPrice * (0.382 + Math.random() * 0.1),
-          '78.6%': stock.latestPrice * (0.214 + Math.random() * 0.1)
+          '23.6%': stock.latestPrice * 0.764,
+          '38.2%': stock.latestPrice * 0.618,
+          '50.0%': stock.latestPrice * 0.5,
+          '61.8%': stock.latestPrice * 0.382,
+          '78.6%': stock.latestPrice * 0.214
         }
       },
       
       // 伊克哈勒指标
       ichimoku: {
-        tenkanSen: stock.latestPrice * (0.98 + Math.random() * 0.04),
-        kijunSen: stock.latestPrice * (0.97 + Math.random() * 0.06),
-        senkouSpanA: stock.latestPrice * (1.01 + Math.random() * 0.04),
-        senkouSpanB: stock.latestPrice * (0.99 + Math.random() * 0.04),
-        chikouSpan: stock.latestPrice * (0.95 + Math.random() * 0.1)
+        tenkanSen: stock.latestPrice,
+        kijunSen: stock.latestPrice,
+        senkouSpanA: stock.latestPrice,
+        senkouSpanB: stock.latestPrice,
+        chikouSpan: stock.latestPrice
       },
       
       // 随机指标扩展
       stochasticOscillator: {
-        fastK: Math.round(Math.random() * 100),
-        fastD: Math.round(Math.random() * 100),
-        slowK: Math.round(Math.random() * 100),
-        slowD: Math.round(Math.random() * 100)
+        fastK: 50,
+        fastD: 50,
+        slowK: 50,
+        slowD: 50
       },
       
       // 成交量指标
       volumeIndicators: {
-        volume: Math.round(Math.random() * 10000000),
-        averageVolume: Math.round(Math.random() * 5000000),
-        volumeRatio: Math.random() * 3,
-        onBalanceVolume: Math.round(Math.random() * 2000000 - 1000000)
+        volume: 0,
+        averageVolume: 0,
+        volumeRatio: 1,
+        onBalanceVolume: 0
       },
       
       // 动量指标
       momentumIndicators: {
-        momentum: Math.random() * 200 - 100,
-        rateOfChange: Math.random() * 20 - 10,
-        acceleration: Math.random() * 5 - 2.5
+        momentum: 0,
+        rateOfChange: 0,
+        acceleration: 0
       }
     };
     
     // 添加增强的AI解释
     const enhancedExplanation = {
       ...standardResult.aiExplanation,
-      enhancedReasoning: `增强分析模型额外考虑了布林带、能量潮指标、平均真实波幅等${Object.keys(enhancedIndicators).length}个技术指标，提供了更全面的市场分析。`,
-      advancedFactors: [
-        '布林带显示价格波动范围',
-        '能量潮指标反映资金流向',
-        '艾略特波浪理论预测价格走势',
-        '斐波那契回撤识别关键支撑阻力位'
-      ]
+      enhancedReasoning: `AI分析功能暂时不可用，请稍后再试。`,
+      advancedFactors: []
     };
     
     return {
@@ -651,12 +480,13 @@ class EnhancedAIController {
     return costConfig[analysisType] || costConfig['default'];
   }
 
-  // 模拟分析进度
+  // 分析进度更新
   static async simulateAnalysisProgress(analysisId) {
     const progressSteps = [25, 45, 65, 85];
     
     for (const progress of progressSteps) {
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+      // 使用固定延迟时间，而非随机时间
+      await new Promise(resolve => setTimeout(resolve, 1500));
       
       const analysis = await Analysis.findById(analysisId);
       if (analysis && analysis.status === 'processing') {

@@ -1,6 +1,5 @@
 const schedule = require('node-schedule');
 const logger = require('../utils/logger');
-const mockDataManager = require('../utils/mockDataManager');
 const Stock = require('../models/Stock');
 const Analysis = require('../models/Analysis');
 const aiService = require('./ai.service');
@@ -233,21 +232,17 @@ class ScheduleService {
     try {
       logger.info('开始更新所有股票价格...');
       
-      // 在实际应用中，这里应该从外部API获取实时股票价格
-      // 这里使用模拟数据进行演示
-      
       // 获取所有股票
       let stocks;
       try {
-        // 尝试从数据库获取
         stocks = await Stock.find({});
         if (stocks.length === 0) {
-          // 如果数据库为空，使用模拟数据
-          stocks = mockDataManager.getStocks();
+          logger.warn('数据库中没有股票数据，无法更新股票价格');
+          return { success: true, updatedCount: 0, failedCount: 0 };
         }
       } catch (error) {
-        logger.warn('从数据库获取股票失败，使用模拟数据:', error.message);
-        stocks = mockDataManager.getStocks();
+        logger.error('从数据库获取股票失败:', error.message);
+        return { success: false, error: error.message };
       }
       
       let updatedCount = 0;
@@ -305,11 +300,12 @@ class ScheduleService {
       try {
         stocks = await Stock.find({});
         if (stocks.length === 0) {
-          stocks = mockDataManager.getStocks();
+          logger.warn('数据库中没有股票数据，无法更新历史数据');
+          return { success: true, updatedCount: 0, failedCount: 0 };
         }
       } catch (error) {
-        logger.warn('从数据库获取股票失败，使用模拟数据:', error.message);
-        stocks = mockDataManager.getStocks();
+        logger.error('从数据库获取股票失败:', error.message);
+        return { success: false, error: error.message };
       }
       
       let updatedCount = 0;
@@ -563,9 +559,12 @@ class ScheduleService {
       // 获取需要进行AI分析的股票列表
       let stocksToAnalyze;
       try {
-        // 实际应用中，这里应该从数据库获取需要分析的股票
-        // 这里使用模拟数据进行演示
-        stocksToAnalyze = mockDataManager.getStocks().slice(0, 3); // 只分析前3支股票
+        // 从数据库获取需要分析的股票，只分析前3支股票
+        stocksToAnalyze = await Stock.find({}).limit(3);
+        if (stocksToAnalyze.length === 0) {
+          logger.warn('数据库中没有股票数据，无法执行AI分析');
+          return { success: true, analyzedCount: 0, failedCount: 0 };
+        }
       } catch (error) {
         logger.error('获取待分析股票列表失败:', error.message);
         return { success: false, error: error.message };
