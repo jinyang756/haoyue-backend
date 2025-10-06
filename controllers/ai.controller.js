@@ -532,7 +532,8 @@ async function simulateAnalysisProgress(analysisId) {
   const progressSteps = [25, 45, 65, 85];
   
   for (const progress of progressSteps) {
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000));
+    // 使用固定延迟时间
+    await new Promise(resolve => setTimeout(resolve, 1500));
     
     const analysis = await Analysis.findById(analysisId);
     if (analysis && analysis.status === 'processing') {
@@ -546,98 +547,81 @@ async function simulateAnalysisProgress(analysisId) {
 
 // 生成AI分析结果
 function generateAIResult(stock, analysis) {
-  const baseRating = Math.random() * 4 + 4; // 4-8之间的基础评级
-  const overallRating = Math.round(baseRating * 10) / 10;
-
-  let recommendation;
-  if (overallRating >= 7.5) recommendation = 'strong buy';
-  else if (overallRating >= 6.5) recommendation = 'buy';
-  else if (overallRating >= 4.5) recommendation = 'hold';
-  else if (overallRating >= 3.5) recommendation = 'sell';
-  else recommendation = 'strong sell';
-
-  const confidenceLevel = Math.round(Math.random() * 30 + 60); // 60-90%
-  const targetPrice = stock.latestPrice * (1 + (Math.random() * 0.4 - 0.1)); // ±10-40%
-  const stopLossPrice = stock.latestPrice * (0.85 + Math.random() * 0.1); // 85-95%
-  const upsidePotential = Math.round(((targetPrice - stock.latestPrice) / stock.latestPrice) * 100);
-  const downsideRisk = Math.round(((stock.latestPrice - stopLossPrice) / stock.latestPrice) * 100);
+  // 使用默认值替代随机生成的模拟数据
+  const overallRating = 5.0;
+  const recommendation = 'hold';
+  const confidenceLevel = 50;
+  const targetPrice = stock.latestPrice;
+  const stopLossPrice = stock.latestPrice * 0.9;
+  const upsidePotential = 0;
+  const downsideRisk = 10;
 
   return {
     result: {
       overallRating,
       recommendation,
       confidenceLevel,
-      riskLevel: overallRating >= 7 ? 'low' : overallRating >= 5 ? 'medium' : 'high',
+      riskLevel: 'medium',
       targetPrice: Math.round(targetPrice * 100) / 100,
       stopLossPrice: Math.round(stopLossPrice * 100) / 100,
       upsidePotential,
       downsideRisk
     },
     factors: {
-      fundamentalScore: Math.round(Math.random() * 30 + 60),
-      technicalScore: Math.round(Math.random() * 30 + 60),
-      sentimentScore: Math.round(Math.random() * 30 + 60),
-      marketScore: Math.round(Math.random() * 30 + 60),
-      industryScore: Math.round(Math.random() * 30 + 60)
+      fundamentalScore: 50,
+      technicalScore: 50,
+      sentimentScore: 50,
+      marketScore: 50,
+      industryScore: 50
     },
     technicalIndicators: {
       movingAverages: {
-        ma5: stock.latestPrice * (0.98 + Math.random() * 0.04),
-        ma10: stock.latestPrice * (0.97 + Math.random() * 0.06),
-        ma20: stock.latestPrice * (0.95 + Math.random() * 0.1),
-        ma60: stock.latestPrice * (0.9 + Math.random() * 0.2),
-        ma120: stock.latestPrice * (0.85 + Math.random() * 0.3),
-        ma250: stock.latestPrice * (0.8 + Math.random() * 0.4)
+        ma5: stock.latestPrice,
+        ma10: stock.latestPrice,
+        ma20: stock.latestPrice,
+        ma60: stock.latestPrice,
+        ma120: stock.latestPrice,
+        ma250: stock.latestPrice
       },
       oscillators: {
-        rsi: Math.round(Math.random() * 40 + 30),
-        macd: Math.random() * 2 - 1,
-        signalLine: Math.random() * 2 - 1,
-        stochastic: Math.round(Math.random() * 40 + 30),
-        williamsR: Math.round(Math.random() * -40 - 30)
+        rsi: 50,
+        macd: 0,
+        signalLine: 0,
+        stochastic: 50,
+        williamsR: -50
       }
     },
     fundamentalAnalysis: {
       financialRatios: {
-        peRatio: Math.random() * 20 + 5,
-        pbRatio: Math.random() * 5 + 1,
-        psRatio: Math.random() * 3 + 0.5,
-        dividendYield: Math.random() * 5,
-        roe: Math.random() * 20 + 5,
-        debtEquityRatio: Math.random() * 2
+        peRatio: 15,
+        pbRatio: 2,
+        psRatio: 1,
+        dividendYield: 2,
+        roe: 15,
+        debtEquityRatio: 1
       }
     },
     sentimentAnalysis: {
       newsSentiment: {
-        score: Math.random() * 2 - 1,
-        trend: Math.random() > 0.5 ? 'up' : 'down',
-        articleCount: Math.round(Math.random() * 50 + 10)
+        score: 0,
+        trend: 'neutral',
+        articleCount: 0
       }
     },
     marketAnalysis: {
-      marketTrend: Math.random() > 0.5 ? 'bullish' : 'bearish',
-      sectorPerformance: Math.random() * 20 - 10,
-      industryRank: Math.round(Math.random() * 20 + 1)
+      marketTrend: 'neutral',
+      sectorPerformance: 0,
+      industryRank: 10
     },
     riskAnalysis: {
-      marketRisk: Math.round(Math.random() * 4 + 1),
-      industryRisk: Math.round(Math.random() * 4 + 1),
-      companySpecificRisk: Math.round(Math.random() * 4 + 1),
-      totalRiskScore: Math.round(Math.random() * 4 + 1)
+      marketRisk: 3,
+      industryRisk: 3,
+      companySpecificRisk: 3,
+      totalRiskScore: 3
     },
     aiExplanation: {
-      reasoning: `基于${analysis.analysisType}分析，${stock.name}(${stock.symbol})的整体评分为${overallRating}分，建议${recommendation}。主要考虑因素包括基本面健康度、技术面走势、市场情绪和风险因素。`,
-      keyFactors: [
-        '公司财务状况良好',
-        '技术指标显示买入信号',
-        '市场情绪积极',
-        '估值相对合理'
-      ],
-      confidenceFactors: [
-        '数据来源可靠',
-        '分析模型准确率高',
-        '市场环境稳定'
-      ]
-    }
+        reasoning: `AI分析功能暂时不可用，请稍后再试。`,
+        keyFactors: []
+      }
   };
 }
