@@ -1,4 +1,4 @@
-# 皓月量化智能引擎 - 后端API服务
+# 皓月量化智能引擎 - 后端API
 
 ## 项目概述
 
@@ -7,28 +7,24 @@
 ## 主要功能
 
 ### 1. 用户管理
-
 - 用户注册、登录、认证
 - 权限管理（普通用户、VIP用户、管理员）
 - 用户偏好设置
 - 订阅管理
 
 ### 2. 股票数据
-
 - 实时股票价格获取
 - 历史数据查询
 - 技术指标计算（RSI、MACD、布林带等）
 - 股票搜索和筛选
 
 ### 3. AI分析
-
 - 多维度分析（基本面、技术面、情绪分析）
 - 智能推荐系统
 - 风险评估
 - 目标价格预测
 
 ### 4. 定时任务
-
 - 股票数据自动更新
 - 技术指标定期计算
 - 维护任务执行
@@ -44,51 +40,60 @@
 - **定时任务**: node-schedule
 - **日志**: winston
 - **邮件服务**: nodemailer
-- **容器化**: Docker
 - **API文档**: Swagger
-- **部署平台**: Vercel / 自建服务器
 
 ## 项目结构
 
 ```
 haoyue-backend/
-├── config/                 # 配置文件（数据库、邮件等）
+├── config/                 # 配置文件
 │   └── db.js               # 数据库配置
-├── controllers/            # 控制器（处理请求和响应）
+├── controllers/            # 控制器
 │   ├── ai.controller.js    # AI分析控制器
+│   ├── alphaBot.controller.js # Alpha机器人控制器
 │   ├── auth.controller.js  # 认证控制器
-│   └── stock.controller.js # 股票数据控制器
-├── middleware/             # 中间件（认证、日志等）
+│   ├── content.controller.js # 内容控制器
+│   ├── enhanced-ai.controller.js # 增强版AI控制器
+│   ├── stock.controller.js # 股票数据控制器
+│   └── subscription.controller.js # 订阅控制器
+├── middleware/             # 中间件
 │   └── auth.js             # 认证中间件
 ├── models/                 # 数据模型
 │   ├── Analysis.js         # 分析模型
+│   ├── Content.js          # 内容模型
 │   ├── Recommendation.js   # 推荐模型
 │   ├── Stock.js            # 股票模型
+│   ├── Subscription.js     # 订阅模型
 │   └── User.js             # 用户模型
 ├── routes/                 # 路由配置
-│   ├── analysis.routes.js  # 分析相关路由
-│   ├── auth.routes.js      # 认证相关路由
-│   ├── recommendation.routes.js  # 推荐相关路由
+│   ├── alphaBot.routes.js  # Alpha机器人路由
+│   ├── analysis.routes.js  # 分析路由
+│   ├── auth.routes.js      # 认证路由
+│   ├── content.routes.js   # 内容路由
+│   ├── news.routes.js      # 新闻路由
+│   ├── recommendation.routes.js # 推荐路由
 │   ├── stock.routes.js     # 股票数据路由
-│   └── user.routes.js      # 用户相关路由
+│   ├── subscription.routes.js # 订阅路由
+│   └── user.routes.js      # 用户路由
 ├── services/               # 业务逻辑层
 │   ├── ai.service.js       # AI服务
+│   ├── alphaBot.service.js # Alpha机器人服务
+│   ├── chinaStockCrawler.service.js # 中国股票爬取服务
+│   ├── schedule-init.js    # 定时任务初始化
 │   ├── schedule.service.js # 定时任务服务
-│   └── stock.service.js    # 股票数据服务
+│   ├── stock.service.js    # 股票数据服务
+│   └── subscription.service.js # 订阅服务
 ├── utils/                  # 工具函数
 │   ├── constants.js        # 常量定义
 │   ├── email.js            # 邮件工具
 │   ├── helpers.js          # 辅助函数
-│   └── logger.js           # 日志工具
-├── logs/                   # 日志文件
-├── uploads/                # 上传文件
-├── docker/                 # Docker相关配置
-│   └── mongo-init.js       # MongoDB初始化脚本
+│   ├── logger.js           # 日志工具
+│   └── mockDataManager.js  # 模拟数据管理
+├── scripts/                # 脚本文件
+│   └── deploy-check.js     # 部署检查脚本
 ├── .env.example            # 环境变量模板
 ├── .gitignore              # Git忽略文件
 ├── package.json            # 项目配置
-├── Dockerfile              # Docker构建文件
-├── docker-compose.yml      # Docker Compose配置
 ├── README.md               # 项目说明
 ├── swagger.js              # Swagger文档配置
 └── index.js                # 入口文件
