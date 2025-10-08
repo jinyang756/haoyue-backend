@@ -37,33 +37,4 @@ jobs:
     - name: 运行单元测试
       run: npm test
 
-  # 部署到Vercel
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' # 仅在推送到main分支时部署
-    
-    steps:
-    - name: 检出代码
-      uses: actions/checkout@v3
-    
-    - name: 设置Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: '18'
-        cache: 'npm'
-    
-    - name: 安装依赖
-      run: npm ci
-    
-    - name: 运行部署前检查
-      run: npm run deploy:check
-    
-    - name: 部署到Vercel
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        github-token: ${{ secrets.GITHUB_TOKEN }}
-        vercel-args: '--prod'
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+  # 部署配置已移除 - 该项目不再使用Vercel进行部署
